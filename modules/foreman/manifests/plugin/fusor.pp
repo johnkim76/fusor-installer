@@ -70,10 +70,10 @@ class foreman::plugin::fusor(
 
   case $::operatingsystem {
     'fedora': {
-      $fusor_name = 'rubygem-fusor'
+      $fusor_name = 'rubygem-staypuft'
     }
     default: {
-      $fusor_name = 'ruby193-rubygem-fusor'
+      $fusor_name = 'ruby193-rubygem-staypuft'
     }
   }
 
