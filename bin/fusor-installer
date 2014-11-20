@@ -13,7 +13,7 @@ config_filename = File.basename($0) + ".yaml"
 if File.exist?('config/' + config_filename)
   CONFIG_FILE = 'config/' + config_filename   
 else
-  CONFIG_FILE = '/etc/foreman/' + config_filename
+  CONFIG_FILE = '/etc/katello-installer/' + config_filename
 end
 
 # helpers

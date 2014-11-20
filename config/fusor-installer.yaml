@@ -1,18 +1,18 @@
-# foreman-installer main configuration file
+# fusor-installer main configuration file, based upon katello-installer
 # note current configuration is written to foreman-installer.yaml every time foreman-install is run
 
 ## Installer configuration
 # Path to answer file
-:answer_file: /etc/foreman/fusor-installer.answers.yaml
+:answer_file: /etc/katello-installer/fusor-installer.answers.yaml
 # Uncomment if you want to load puppet modules from a specific path, $pwd/modules is used by default
-:modules_dir: /usr/share/foreman-installer/modules
+:modules_dir: /usr/share/katello-installer/modules
 :provisioning_wizard: 'interactive'
-:installer_dir: /usr/share/foreman-installer
+:installer_dir: /usr/share/katello-installer
 
 
 ## Useful for development, e.g. when you want to move log files to local directory
-:log_dir: '/var/log/foreman-installer'
-:log_name: 'foreman-installer.log'
+:log_dir: '/var/log/katello-installer'
+:log_name: 'katello-installer.log'
 :log_level: :debug
 
 # Change if you want to debug default answers for you modules, this directory holds default answers
@@ -31,9 +31,10 @@
 :name: Foreman
 # :no_prefix: false
 :order:
+  - certs
   - foreman
-  - foreman_proxy
-  - puppet
+  - katello
+  - capsule
 
 # The mapping hash provides Kafo with the information to find plugin classes
 :mapping:
