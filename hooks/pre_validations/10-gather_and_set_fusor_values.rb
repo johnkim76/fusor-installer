@@ -32,16 +32,16 @@ if app_value(:provisioning_wizard) != 'none'
     end
   end
 
-  param('foreman_proxy', 'tftp_servername').value = provisioning_wizard.ip
-  param('foreman_proxy', 'dhcp_interface').value = provisioning_wizard.interface
-  param('foreman_proxy', 'dhcp_gateway').value = provisioning_wizard.gateway
-  param('foreman_proxy', 'dhcp_range').value = "#{provisioning_wizard.from} #{provisioning_wizard.to}"
-  param('foreman_proxy', 'dhcp_nameservers').value = provisioning_wizard.ip
-  param('foreman_proxy', 'dns_interface').value = provisioning_wizard.interface
-  param('foreman_proxy', 'dns_zone').value = provisioning_wizard.domain
-  param('foreman_proxy', 'dns_reverse').value = provisioning_wizard.ip.split('.')[0..2].reverse.join('.') + '.in-addr.arpa'
-  param('foreman_proxy', 'dns_forwarders').value = provisioning_wizard.dns
-  param('foreman_proxy', 'foreman_base_url').value = provisioning_wizard.base_url
+  param('capsule', 'tftp_servername').value = provisioning_wizard.ip
+  param('capsule', 'dhcp_interface').value = provisioning_wizard.interface
+  param('capsule', 'dhcp_gateway').value = provisioning_wizard.gateway
+  param('capsule', 'dhcp_range').value = "#{provisioning_wizard.from} #{provisioning_wizard.to}"
+  param('capsule', 'dhcp_nameservers').value = provisioning_wizard.ip
+  param('capsule', 'dns_interface').value = provisioning_wizard.interface
+  param('capsule', 'dns_zone').value = provisioning_wizard.domain
+  param('capsule', 'dns_reverse').value = provisioning_wizard.ip.split('.')[0..2].reverse.join('.') + '.in-addr.arpa'
+  param('capsule', 'dns_forwarders').value = provisioning_wizard.dns
+#  param('capsule', 'foreman_base_url').value = provisioning_wizard.base_url
 
   param('foreman_plugin_fusor', 'configure_networking').value = provisioning_wizard.configure_networking
   param('foreman_plugin_fusor', 'configure_firewall').value = provisioning_wizard.configure_firewall
@@ -62,11 +62,11 @@ if app_value(:provisioning_wizard) != 'none'
   param('foreman_plugin_fusor', 'ssh_public_key').value = authentication_wizard.ssh_public_key
 
   # some enforced values for foreman-installer
-  param('foreman_proxy', 'tftp').value = true
-  param('foreman_proxy', 'dhcp').value = true
-  param('foreman_proxy', 'dns').value = true
-  param('foreman_proxy', 'repo').value = 'nightly'
+  param('capsule', 'tftp').value = true
+  param('capsule', 'dhcp').value = true
+  param('capsule', 'dns').value = true
+#  param('capsule', 'repo').value = 'nightly'
   param('foreman', 'repo').value = 'nightly'
 
-  param('puppet', 'server').value = true
+#  param('puppet', 'server').value = true
 end
