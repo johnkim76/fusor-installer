@@ -112,5 +112,23 @@ class foreman::plugin::fusor_network(
       proto  => 'tcp',
       action => 'accept',
     }
+    # The Foreman server accepts connections with managed systems on this port.
+    firewall { '5671 accept - managed systems':
+      port   => '5671',
+      proto  => 'tcp',
+      action => 'accept',
+    }
+    # The Foreman server accepts connections to Tomcat on this port.
+    firewall { '8080 accept - tomcat6':
+      port   => '8080',
+      proto  => 'tcp',
+      action => 'accept',
+    }
+    # The Foreman server accepts connections to Smart Proxy on this port.
+    firewall { '9090 accept - smart proxy':
+      port   => '9090',
+      proto  => 'tcp',
+      action => 'accept',
+    }
   }
 }
