@@ -63,11 +63,9 @@ cp config/fusor-installer.answers.yaml %{buildroot}%{_sysconfdir}/katello-instal
 %{_datadir}/katello-installer/hooks/lib/base_seeder.rb
 %{_datadir}/katello-installer/hooks/lib/foreman.rb
 %attr(755, root, root) %{_datadir}/katello-installer/hooks/lib/install_modules.sh
-%{_datadir}/katello-installer/hooks/lib/authentication_wizard.rb
 %{_datadir}/katello-installer/hooks/lib/base_wizard.rb
 %{_datadir}/katello-installer/hooks/lib/provisioning_seeder.rb
 %{_datadir}/katello-installer/hooks/lib/provisioning_wizard.rb
-%{_datadir}/katello-installer/hooks/lib/subscription_seeder.rb
 %{_datadir}/katello-installer/hooks/post/10-setup_provisioning.rb
 %{_datadir}/katello-installer/hooks/pre_validations/10-gather_and_set_fusor_values.rb
 %{_datadir}/katello-installer/hooks/pre_values/10-register_fusor_modules.rb

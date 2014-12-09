@@ -1,11 +1,8 @@
 if app_value(:provisioning_wizard) != 'none'
   require File.join(KafoConfigure.root_dir, 'hooks', 'lib', 'base_wizard.rb')
-  require File.join(KafoConfigure.root_dir, 'hooks', 'lib', 'authentication_wizard.rb')
   require File.join(KafoConfigure.root_dir, 'hooks', 'lib', 'provisioning_wizard.rb')
   provisioning_wizard = ProvisioningWizard.new(kafo)
   provisioning_wizard.start
-  authentication_wizard = AuthenticationWizard.new(kafo)
-  authentication_wizard.start
 
   if provisioning_wizard.configure_networking || provisioning_wizard.configure_firewall
     command = PuppetCommand.new(%Q(class {"foreman::plugin::fusor_network":
@@ -58,8 +55,6 @@ if app_value(:provisioning_wizard) != 'none'
   param('foreman_plugin_fusor', 'base_url').value = provisioning_wizard.base_url
   param('foreman_plugin_fusor', 'ntp_host').value = provisioning_wizard.ntp_host
   param('foreman_plugin_fusor', 'timezone').value = provisioning_wizard.timezone
-  param('foreman_plugin_fusor', 'root_password').value = authentication_wizard.root_password
-  param('foreman_plugin_fusor', 'ssh_public_key').value = authentication_wizard.ssh_public_key
 
   # some enforced values for foreman-installer
   param('capsule', 'tftp').value = true
