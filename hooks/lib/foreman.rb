@@ -1,5 +1,7 @@
 class Foreman
   RESOURCES = {
+      :organization => 'Organization',
+      :location => 'Location',
       :subnet => 'Subnet',
       :domain => 'Domain',
       :smart_proxy => 'SmartProxy',

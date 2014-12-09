@@ -3,7 +3,7 @@ require 'uri'
 
 class BaseSeeder
   def initialize(kafo)
-    @foreman_url = kafo.param('capsule', 'foreman_base_url').value
+    @foreman_url = kafo.param('foreman_plugin_fusor', 'base_url').value
     param = kafo.param('foreman', 'admin_username')
     @username = param.nil? ? 'admin' : param.value
     param = kafo.param('foreman', 'admin_password')

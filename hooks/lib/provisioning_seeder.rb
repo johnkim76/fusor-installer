@@ -5,15 +5,18 @@ class ProvisioningSeeder < BaseSeeder
 
   def initialize(kafo)
     super
-    @domain = kafo.param('foreman_proxy', 'dns_zone').value
+    @organization = kafo.param('foreman', 'initial_organization').value
+    @location = kafo.param('foreman', 'initial_location').value
+
+    @domain = kafo.param('capsule', 'dns_zone').value
     @environment = kafo.param('foreman', 'environment').value
 
     @netmask = kafo.param('foreman_plugin_fusor', 'netmask').value
     @network = kafo.param('foreman_plugin_fusor', 'network').value
-    @ip = kafo.param('foreman_proxy', 'tftp_servername').value
+    @ip = kafo.param('capsule', 'tftp_servername').value
     @from = kafo.param('foreman_plugin_fusor', 'from').value
     @to = kafo.param('foreman_plugin_fusor', 'to').value
-    @gateway = kafo.param('foreman_proxy', 'dhcp_gateway').value
+    @gateway = kafo.param('capsule', 'dhcp_gateway').value
     @kernel = kafo.param('foreman_plugin_discovery', 'kernel').value
     @initrd = kafo.param('foreman_plugin_discovery', 'initrd').value
     @discovery_env_name = 'discovery'
@@ -51,19 +54,29 @@ class ProvisioningSeeder < BaseSeeder
     kinds = @foreman.template_kind.index
     provisioning = kinds.detect { |k| k['name'] == 'provision' }
     pxe_linux = kinds.detect { |k| k['name'] == 'PXELinux' }
-    @foreman.config_template.show_or_ensure({'id' => 'redhat_register'},
+    default_config_templates = []
+    default_config_templates << @foreman.config_template.show_or_ensure(
+                                            {'id' => 'redhat_register'},
                                             {'template' => redhat_register_snippet, 'snippet' => '1', 'name' => 'redhat_register'})
-    @foreman.config_template.show_or_ensure({'id' => 'custom_deployment_repositories'},
+
+    default_config_templates << @foreman.config_template.show_or_ensure(
+                                            {'id' => 'custom_deployment_repositories'},
                                             {'template' => custom_deployment_repositories_snippet, 'snippet' => '1', 'name' => 'custom_deployment_repositories'})
-    @foreman.config_template.show_or_ensure({'id' => 'Kickstart RHEL default'},
+
+    default_config_templates << @foreman.config_template.show_or_ensure(
+                                            {'id' => 'Kickstart RHEL default'},
                                             {'template' => kickstart_rhel_default, 'template_kind_id' => provisioning['id'], 'name' => 'Kickstart RHEL default'})
-    @foreman.config_template.show_or_ensure({'id' => 'Kickstart default'},
+
+    default_config_templates << @foreman.config_template.show_or_ensure(
+                                            {'id' => 'Kickstart default'},
                                             {'template' => kickstart_default, 'template_kind_id' => provisioning['id'], 'name' => 'Kickstart default'})
-    @foreman.config_template.show_or_ensure({'id' => 'Kickstart default PXELinux'},
-                                            {'template' => kickstart_default_pxelinux, 'template_kind_id' => pxe_linux['id'], 'name' => 'Kickstart default PXELinux'})
-    @foreman.config_template.show_or_ensure({'id' => 'ssh_public_key'},
+
+    default_config_templates << @foreman.config_template.show_or_ensure(
+                                            {'id' => 'ssh_public_key'},
                                             {'template' => ssh_public_key_snippet, 'snippet' => '1', 'name' => 'ssh_public_key'})
-    @foreman.config_template.show_or_ensure({'id' => 'kickstart_networking_setup'},
+
+    default_config_templates << @foreman.config_template.show_or_ensure(
+                                            {'id' => 'kickstart_networking_setup'},
                                             {'template' => kickstart_networking_setup_snippet, 'snippet' => '1', 'name' => 'kickstart_networking_setup'})
 
     @foreman.partition_table.show_or_ensure({'id' => 'LVM with cinder-volumes',
@@ -76,9 +89,12 @@ class ProvisioningSeeder < BaseSeeder
                                              'layout' => openstack_lvm,
                                              'os_family' => 'Redhat'}, {})
 
-    name = 'PXELinux global default'
-    pxe_template = @foreman.config_template.show_or_ensure({'id' => name},
-                                                           {'template' => template})
+# TODO: currently commenting out modification of the 'PXELinux global default'.  We'll need to 1. unlock the template, 2. update it to add discovery (vs replace it) and 3. lock the template.  Assuming that Katello is seeding this already and if katello always includes discovery, we may be able to add this to it's seeding instead of doing it here.
+#    name = 'PXELinux global default'
+#    pxe_template = @foreman.config_template.show_or_ensure({'id' => name},
+#                                                           {'template' => template})
+#    default_config_templates << pxe_template
+    pxe_template = nil
 
     @foreman.config_template.build_pxe_default
 
@@ -145,21 +161,65 @@ class ProvisioningSeeder < BaseSeeder
     setup_idle_timeout
     setup_default_root_pass
     setup_ignore_puppet_facts_for_provisioning
-    create_discovery_env(pxe_template)
+    discovery_environment = create_discovery_env(pxe_template)
+
+    assign_organization({ 'domain' => default_domain, 'subnet' => default_subnet,
+                          'config_templates' => default_config_templates, 'hostgroups' => @hostgroups,
+                          'environments' => [default_environment, discovery_environment] })
+    assign_location({ 'domain' => default_domain, 'subnet' => default_subnet,
+                      'config_templates' => default_config_templates, 'hostgroups' => @hostgroups,
+                      'environments' => [default_environment, discovery_environment] })
 
     say HighLine.color("Use '#{default_hostgroup['name']}' hostgroup for provisioning", :good)
   end
 
   private
 
+  def assign_organization(objects)
+    organization = @foreman.organization.first!(%Q(name = "#{@organization}"))
+    organization = @foreman.organization.show!('id' => organization['id'])
+
+    domain_ids = organization['domains'].map { |d| d['id'] }
+    subnet_ids = organization['subnets'].map { |s| s['id'] }
+    config_template_ids = organization['config_templates'].map { |t| t['id'] }
+    hostgroup_ids = organization['hostgroups'].map { |h| h['id'] }
+    environment_ids = organization['environments'].map { |e| e['id'] }
+
+    @foreman.organization.update('id' => organization['id'],
+                                 'organization' => { 'domain_ids' => (domain_ids + [objects['domain']['id']]).uniq,
+                                                     'subnet_ids' => (subnet_ids + [objects['subnet']['id']]).uniq,
+                                                     'config_template_ids' => (config_template_ids + objects['config_templates'].map{ |t| t['id']}).uniq,
+                                                     'hostgroup_ids' => (hostgroup_ids + objects['hostgroups'].map{ |h| h['id']}).uniq,
+                                                     'environment_ids' => (environment_ids + [objects['environments'].map{ |e| e['id'] }]).flatten.uniq })
+  end
+
+  def assign_location(objects)
+    location = @foreman.location.first!(%Q(name = "#{@location}"))
+    location = @foreman.location.show!('id' => location['id'])
+
+    domain_ids = location['domains'].map { |d| d['id'] }
+    subnet_ids = location['subnets'].map { |s| s['id'] }
+    config_template_ids = location['config_templates'].map { |t| t['id'] }
+    hostgroup_ids = location['hostgroups'].map { |h| h['id'] }
+    environment_ids = location['environments'].map { |e| e['id'] }
+
+    @foreman.location.update('id' => location['id'],
+                             'location' => { 'domain_ids' => (domain_ids + [objects['domain']['id']]).uniq,
+                                             'subnet_ids' => (subnet_ids + [objects['subnet']['id']]).uniq,
+                                             'config_template_ids' => (config_template_ids + objects['config_templates'].map{ |t| t['id']}).uniq,
+                                             'hostgroup_ids' => (hostgroup_ids + objects['hostgroups'].map{ |h| h['id']}).uniq,
+                                             'environment_ids' => (environment_ids + [objects['environments'].map{ |e| e['id'] }]).flatten.uniq })
+  end
+
   def create_discovery_env(template)
     env = @foreman.environment.show_or_ensure({'id' => @discovery_env_name},
                                               {'name' => @discovery_env_name})
     # if the template has combination already, we don't update it
-    unless template['template_combinations'].any? { |c| c['environment_id'] == env['id'].to_i and c['hostgroup_id'].nil? }
+    unless template.nil? || template['template_combinations'].any? { |c| c['environment_id'] == env['id'].to_i and c['hostgroup_id'].nil? }
       @foreman.config_template.update 'id' => template['name'],
                                       'config_template' => {'template_combinations_attributes' => [{'environment_id' => env['id']}]}
     end
+    env
   end
 
   def setup_setting(default_hostgroup)
@@ -995,37 +1055,4 @@ name: redhat_register
 EOS
   end
 
-  def kickstart_default_pxelinux
-    <<'EOS'
-<%#
-kind: PXELinux
-name: Kickstart default PXELinux
-oses:
-- CentOS 4
-- CentOS 5
-- CentOS 6
-- CentOS 7
-- Fedora 16
-- Fedora 17
-- Fedora 18
-- Fedora 19
-- Fedora 20
-- RedHat 4
-- RedHat 5
-- RedHat 6
-- RedHat 7
-%>
-default linux
-label linux
-kernel <%= @kernel %>
-<% if @host.operatingsystem.name == 'Fedora' and @host.operatingsystem.major.to_i > 16 -%>
-append initrd=<%= @initrd %> ks=<%= foreman_url('provision')%> ks.device=bootif network ks.sendmac
-<% elsif @host.operatingsystem.name != 'Fedora' and @host.operatingsystem.major.to_i >= 7 -%>
-append initrd=<%= @initrd %> ks=<%= foreman_url('provision')%> network ks.sendmac biosdevname=0
-<% else -%>
-append initrd=<%= @initrd %> ks=<%= foreman_url('provision')%> ksdevice=bootif network kssendmac
-<% end -%>
-IPAPPEND 2
-EOS
-  end
 end
