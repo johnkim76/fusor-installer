@@ -38,7 +38,7 @@ if app_value(:provisioning_wizard) != 'none'
   param('capsule', 'dns_zone').value = provisioning_wizard.domain
   param('capsule', 'dns_reverse').value = provisioning_wizard.ip.split('.')[0..2].reverse.join('.') + '.in-addr.arpa'
   param('capsule', 'dns_forwarders').value = provisioning_wizard.dns
-#  param('capsule', 'foreman_base_url').value = provisioning_wizard.base_url
+  param('capsule', 'foreman_base_url').value = provisioning_wizard.base_url
 
   param('foreman_plugin_fusor', 'configure_networking').value = provisioning_wizard.configure_networking
   param('foreman_plugin_fusor', 'configure_firewall').value = provisioning_wizard.configure_firewall
