@@ -68,19 +68,20 @@ class foreman::plugin::fusor(
 ) {
   validate_bool($configure_networking)
 
-  case $::operatingsystem {
-    'fedora': {
-      $fusor_name = 'rubygem-staypuft'
-    }
-    default: {
-      $fusor_name = 'ruby193-rubygem-staypuft'
-    }
-  }
-
-  package { $fusor_name:
-    notify  => Class['foreman::service'],
-    require => Exec['NTP sync'],
-  }
+# TODO: temporarily disabling the staypuft package install
+#  case $::operatingsystem {
+#    'fedora': {
+#      $fusor_name = 'rubygem-staypuft'
+#    }
+#    default: {
+#      $fusor_name = 'ruby193-rubygem-staypuft'
+#    }
+#  }
+#
+#  package { $fusor_name:
+#    notify  => Class['foreman::service'],
+#    require => Exec['NTP sync'],
+#  }
 
   exec { 'NTP sync':
     command => "/sbin/service ntpd stop; /usr/sbin/ntpdate $ntp_host",
