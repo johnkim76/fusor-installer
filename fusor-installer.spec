@@ -25,12 +25,6 @@ Requires:   rubygem-kafo >= 0.6.4
 Requires:   rubygem-foreman_api >= 0.1.4
 Requires:   git
 
-%if 0%{?fedora} > 18
-Requires:   %{?scl_prefix}ruby(release)
-%else
-Requires:   %{?scl_prefix}ruby(abi)
-%endif
-
 %description
 This is a Foreman-Installer plugin that allows you to install and configure
 the Fusor Foreman plugin
