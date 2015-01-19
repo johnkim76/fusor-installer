@@ -13,7 +13,7 @@ if app_value(:provisioning_wizard) != 'none' && [0,2].include?(kafo.exit_code)
   logger.debug 'Puppet agent run finished'
 
   logger.debug 'Installing puppet modules'
-  `/usr/share/foreman-installer/hooks/lib/install_modules.sh`
+  `/usr/share/katello-installer/hooks/lib/install_modules.sh`
   `foreman-rake puppet:import:puppet_classes[batch]`
   # run import
   logger.debug 'Puppet modules installed'
