@@ -79,16 +79,6 @@ class ProvisioningSeeder < BaseSeeder
                                             {'id' => 'kickstart_networking_setup'},
                                             {'template' => kickstart_networking_setup_snippet, 'snippet' => '1', 'name' => 'kickstart_networking_setup'})
 
-    @foreman.partition_table.show_or_ensure({'id' => 'LVM with cinder-volumes',
-                                             'name' => 'LVM with cinder-volumes',
-                                             'layout' => lvm_w_cinder_volumes,
-                                             'os_family' => 'Redhat'}, {})
-
-    @foreman.partition_table.show_or_ensure({'id' => 'OpenStack Default',
-                                             'name' => 'OpenStack Default',
-                                             'layout' => openstack_lvm,
-                                             'os_family' => 'Redhat'}, {})
-
 # TODO: currently commenting out modification of the 'PXELinux global default'.  We'll need to 1. unlock the template, 2. update it to add discovery (vs replace it) and 3. lock the template.  Assuming that Katello is seeding this already and if katello always includes discovery, we may be able to add this to it's seeding instead of doing it here.
 #    name = 'PXELinux global default'
 #    pxe_template = @foreman.config_template.show_or_ensure({'id' => name},
@@ -257,11 +247,8 @@ class ProvisioningSeeder < BaseSeeder
 
   def assign_partition_tables(os)
     if os['family'] == 'Redhat'
-      default_ptable_name = 'OpenStack Default'
-      additional_ptables_names = ['LVM with cinder-volumes']
-    elsif os['family'] == 'Debian'
-      default_ptable_name = 'Preseed default'
-      additional_ptable_names = []
+      default_ptable_name = 'Kickstart default'
+      additional_ptables_names = []
     end
     default_ptable = nil
     additional_ptables_names.push(default_ptable_name).each do |ptable_name|
@@ -878,36 +865,6 @@ for i in $IFACES; do
     fi 
 done
 
-EOS
-  end
-
-  def lvm_w_cinder_volumes
-    <<'EOS'
-#Dynamic
-zerombr
-clearpart --all --initlabel
-part biosboot --fstype=biosboot --size=1 --ondisk=sda
-part /boot --fstype ext3 --size=500 --ondisk=sda
-part swap --size=1024 --ondisk=sda
-part pv.01 --size=1024 --grow --maxsize=102400 --ondisk=sda
-part pv.02 --size=1024 --grow --ondisk=sda
-volgroup vg_root pv.01
-volgroup cinder-volumes pv.02
-logvol  /  --vgname=vg_root  --size=1 --grow --name=lv_root
-EOS
-  end
-
-  def openstack_lvm
-    <<'EOS'
-#Dynamic
-zerombr
-clearpart --all --initlabel
-part biosboot --fstype=biosboot --size=1 --ondisk=sda
-part /boot --fstype ext3 --size=500 --ondisk=sda
-part swap --size=1024 --ondisk=sda
-part pv.01 --size=1024 --grow --ondisk=sda
-volgroup vg_root pv.01
-logvol  /  --vgname=vg_root  --size=1 --grow --name=lv_root
 EOS
   end
 
