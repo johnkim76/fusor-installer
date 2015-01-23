@@ -89,10 +89,15 @@ class ProvisioningSeeder < BaseSeeder
     @foreman.config_template.build_pxe_default
 
     @hostgroups = []
+    @media = []
     oses = find_default_oses(foreman_host)
     oses.each do |os|
-      next if os['name'] == 'RedHat' && os['major'] == '6' # we don's support RHEL6 for provisioning anymore
-      next if os['name'] == 'CentOS' && os['major'] == '6' # we don's support CentOS6 for provisioning anymore
+      next if os['name'] == 'RedHat'
+# TODO: for the initial scenario, we are going to support deploying oVirt
+# on CentOS 6; therefore, temporarily disabling the check that skipped CentOS 6 
+# and going to fully skip RHEL
+#      next if os['name'] == 'RedHat' && os['major'] == '6' # we don's support RHEL6 for provisioning anymore
+#      next if os['name'] == 'CentOS' && os['major'] == '6' # we don's support CentOS6 for provisioning anymore
 
       group_id = "base_#{os['name']}_#{os['major']}"
       medium = @foreman.medium.index('search' => "name ~ #{os['name']}").first
@@ -109,6 +114,7 @@ class ProvisioningSeeder < BaseSeeder
           @foreman.operating_system.update 'id' => os['id'], 'operatingsystem' => {'medium_ids' => [medium['id']]}
         end
       end
+      @media.push medium unless medium.nil?
 
       assign_provisioning_templates(os)
       ptable = assign_partition_tables(os)
@@ -116,7 +122,6 @@ class ProvisioningSeeder < BaseSeeder
       hostgroup_attrs = {'name' => group_id,
                          'architecture_id' => foreman_host['architecture_id'],
                          'domain_id' => default_domain['id'],
-                         'environment_id' => default_environment['id'],
                          'operatingsystem_id' => os['id'],
                          'ptable_id' => ptable['id'],
                          'puppet_ca_proxy_id' => default_proxy['id'],
@@ -124,7 +129,35 @@ class ProvisioningSeeder < BaseSeeder
                          'subnet_id' => default_subnet['id']}
       hostgroup_attrs['medium_id'] = medium['id'] unless medium.nil?
 
-      hostgroup = @foreman.hostgroup.show_or_ensure({'id' => group_id}, hostgroup_attrs)
+      hostgroup_base = @foreman.hostgroup.show_or_ensure({'id' => group_id}, hostgroup_attrs)
+      @hostgroups.push hostgroup_base
+
+      # TODO: hostgroup creation... when we move to the foreman deployment feature,
+      # it has been mentioned that we should no longer need to create these, as 
+      # that feature will automatically create them based upon the needs of the deployment
+      #
+      # creating ovirt hostgroup
+      hostgroup_attrs = {'name' => 'oVirt',
+                         'parent_id' => hostgroup_base['id'],
+                         'environment_id' => default_environment['id']}
+      hostgroup_ovirt = @foreman.hostgroup.search_or_ensure("title = #{hostgroup_base['name']}/#{hostgroup_attrs['name']}", hostgroup_attrs)
+      @hostgroups.push hostgroup_ovirt
+
+      # creating ovirt-engine hostgroup
+      puppetclass_ids = ovirt_engine_puppetclass_ids('ovirt')
+      hostgroup_attrs = {'name' => 'oVirt-Engines',
+                         'parent_id' => hostgroup_ovirt['id'],
+                         'puppetclass_ids' => puppetclass_ids}
+      hostgroup_ovirt_engines = @foreman.hostgroup.search_or_ensure("title = #{hostgroup_base['name']}/#{hostgroup_ovirt['name']}/#{hostgroup_attrs['name']}", hostgroup_attrs)
+      @hostgroups.push hostgroup_ovirt_engines
+
+      # creating ovirt-hypervisor hostgroup
+      puppetclass_ids = ovirt_hypervisor_puppetclass_ids('ovirt')
+      hostgroup_attrs = {'name' => 'oVirt-Hypervisors',
+                         'parent_id' => hostgroup_ovirt['id'],
+                         'puppetclass_ids' => puppetclass_ids}
+      hostgroup_ovirt_hypervisors = @foreman.hostgroup.search_or_ensure("title = #{hostgroup_base['name']}/#{hostgroup_ovirt['name']}/#{hostgroup_attrs['name']}", hostgroup_attrs)
+      @hostgroups.push hostgroup_ovirt_hypervisors
 
       if !@default_ssh_public_key.nil? && !@default_ssh_public_key.empty?
         @foreman.parameter.show_or_ensure({'id' => 'ssh_public_key', 'operatingsystem_id' => os['id']},
@@ -143,7 +176,6 @@ class ProvisioningSeeder < BaseSeeder
                                             'name' => 'time-zone',
                                             'value' => @timezone,
                                         })
-      @hostgroups.push hostgroup
     end
 
     default_hostgroup = @hostgroups.last
@@ -155,15 +187,36 @@ class ProvisioningSeeder < BaseSeeder
 
     assign_organization({ 'domain' => default_domain, 'subnet' => default_subnet,
                           'config_templates' => default_config_templates, 'hostgroups' => @hostgroups,
-                          'environments' => [default_environment, discovery_environment] })
+                          'environments' => [default_environment, discovery_environment],
+                          'media' => @media })
     assign_location({ 'domain' => default_domain, 'subnet' => default_subnet,
                       'config_templates' => default_config_templates, 'hostgroups' => @hostgroups,
-                      'environments' => [default_environment, discovery_environment] })
-
-    say HighLine.color("Use '#{default_hostgroup['name']}' hostgroup for provisioning", :good)
+                      'environments' => [default_environment, discovery_environment],
+                      'media' => @media })
   end
 
   private
+
+  def ovirt_engine_puppetclass_ids(search_string)
+    class_ids = []
+    classes = @foreman.puppetclass.index('search' => search_string, 'style' => 'list')
+
+    class_ids.push(classes.find{ |c| c['name'] == 'ovirt' }['id'])
+    class_ids.push(classes.find{ |c| c['name'] == 'ovirt::repo' }['id'])
+    class_ids.push(classes.find{ |c| c['name'] == 'ovirt::engine::config' }['id'])
+    class_ids.push(classes.find{ |c| c['name'] == 'ovirt::engine::packages' }['id'])
+    class_ids.push(classes.find{ |c| c['name'] == 'ovirt::engine::setup' }['id'])
+    class_ids
+  end
+
+  def ovirt_hypervisor_puppetclass_ids(search_string)
+    class_ids = []
+    classes = @foreman.puppetclass.index('search' => search_string, 'style' => 'list')
+
+    class_ids.push(classes.find{ |c| c['name'] == 'ovirt' }['id'])
+    class_ids.push(classes.find{ |c| c['name'] == 'ovirt::hypervisor::packages' }['id'])
+    class_ids
+  end
 
   def assign_organization(objects)
     organization = @foreman.organization.first!(%Q(name = "#{@organization}"))
@@ -174,13 +227,15 @@ class ProvisioningSeeder < BaseSeeder
     config_template_ids = organization['config_templates'].map { |t| t['id'] }
     hostgroup_ids = organization['hostgroups'].map { |h| h['id'] }
     environment_ids = organization['environments'].map { |e| e['id'] }
+    medium_ids = organization['media'].map { |m| m['id'] }
 
     @foreman.organization.update('id' => organization['id'],
                                  'organization' => { 'domain_ids' => (domain_ids + [objects['domain']['id']]).uniq,
                                                      'subnet_ids' => (subnet_ids + [objects['subnet']['id']]).uniq,
-                                                     'config_template_ids' => (config_template_ids + objects['config_templates'].map{ |t| t['id']}).uniq,
-                                                     'hostgroup_ids' => (hostgroup_ids + objects['hostgroups'].map{ |h| h['id']}).uniq,
-                                                     'environment_ids' => (environment_ids + [objects['environments'].map{ |e| e['id'] }]).flatten.uniq })
+                                                     'config_template_ids' => (config_template_ids + objects['config_templates'].map{ |t| t['id'] }).uniq,
+                                                     'hostgroup_ids' => (hostgroup_ids + objects['hostgroups'].map{ |h| h['id'] }).uniq,
+                                                     'environment_ids' => (environment_ids + [objects['environments'].map{ |e| e['id'] }]).flatten.uniq,
+                                                     'medium_ids' => (medium_ids + [objects['media'].map{ |m| m['id'] }]).uniq })
   end
 
   def assign_location(objects)
@@ -192,13 +247,15 @@ class ProvisioningSeeder < BaseSeeder
     config_template_ids = location['config_templates'].map { |t| t['id'] }
     hostgroup_ids = location['hostgroups'].map { |h| h['id'] }
     environment_ids = location['environments'].map { |e| e['id'] }
+    medium_ids = location['media'].map { |m| m['id'] }
 
     @foreman.location.update('id' => location['id'],
                              'location' => { 'domain_ids' => (domain_ids + [objects['domain']['id']]).uniq,
                                              'subnet_ids' => (subnet_ids + [objects['subnet']['id']]).uniq,
-                                             'config_template_ids' => (config_template_ids + objects['config_templates'].map{ |t| t['id']}).uniq,
-                                             'hostgroup_ids' => (hostgroup_ids + objects['hostgroups'].map{ |h| h['id']}).uniq,
-                                             'environment_ids' => (environment_ids + [objects['environments'].map{ |e| e['id'] }]).flatten.uniq })
+                                             'config_template_ids' => (config_template_ids + objects['config_templates'].map{ |t| t['id'] }).uniq,
+                                             'hostgroup_ids' => (hostgroup_ids + objects['hostgroups'].map{ |h| h['id'] }).uniq,
+                                             'environment_ids' => (environment_ids + [objects['environments'].map{ |e| e['id'] }]).flatten.uniq,
+                                             'medium_ids' => (medium_ids + [objects['media'].map{ |m| m['id'] }]).uniq })
   end
 
   def create_discovery_env(template)

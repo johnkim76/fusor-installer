@@ -43,6 +43,16 @@ class BaseSeeder
                                                              'name' => 'CentOS', 'major' => '7', 'minor' => '0',
                                                              'family' => 'Redhat'}, {})
     end
+
+    # TODO: The creation of OS is currently based upon the OS of the server;
+    # however for our initial scenario (oVirt), we are going to assume that
+    # the hosts that are provisioned are CentOS 6.6.  We'll need to update this
+    # once we have support for the Red Hat content in place
+    # (subscriptions...etc.)
+    additional << foreman.operating_system.show_or_ensure({'id' => 'CentOS 6.6',
+                                                           'name' => 'CentOS', 'major' => '6',
+                                                           'minor' => '6', 'family' => 'Redhat'}, {})
+
     additional
   end
 
