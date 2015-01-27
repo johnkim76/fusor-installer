@@ -79,12 +79,10 @@ class ProvisioningSeeder < BaseSeeder
                                             {'id' => 'kickstart_networking_setup'},
                                             {'template' => kickstart_networking_setup_snippet, 'snippet' => '1', 'name' => 'kickstart_networking_setup'})
 
-# TODO: currently commenting out modification of the 'PXELinux global default'.  We'll need to 1. unlock the template, 2. update it to add discovery (vs replace it) and 3. lock the template.  Assuming that Katello is seeding this already and if katello always includes discovery, we may be able to add this to it's seeding instead of doing it here.
-#    name = 'PXELinux global default'
-#    pxe_template = @foreman.config_template.show_or_ensure({'id' => name},
-#                                                           {'template' => template})
-#    default_config_templates << pxe_template
-    pxe_template = nil
+    name = 'PXELinux global default'
+    pxe_template = @foreman.config_template.show_or_ensure({'id' => name},
+                                                           {'template' => template})
+    default_config_templates << pxe_template
 
     @foreman.config_template.build_pxe_default
 
