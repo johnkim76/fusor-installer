@@ -1,4 +1,4 @@
-require 'foreman_api'
+require 'apipie-bindings'
 require 'uri'
 
 class BaseSeeder
@@ -16,7 +16,7 @@ class BaseSeeder
   end
 
   def foreman
-    @foreman ||= Foreman.new(:base_url => @foreman_url, :username => @username, :password => @password)
+    @foreman ||= Foreman.new(ApipieBindings::API.new(:uri => @foreman_url, :username => @username, :password => @password, :api_version => 2))
   end
 
   private
@@ -27,19 +27,19 @@ class BaseSeeder
   end
 
   def find_default_os(foreman_host)
-    @foreman.operating_system.show! 'id' => foreman_host['operatingsystem_id'],
+    @foreman.operatingsystems.show! 'id' => foreman_host['operatingsystem_id'],
                                     :error_message => "operating system for #{@fqdn} not found, DB inconsitency?"
   end
 
   def additional_oses(os)
     additional = []
     if os['name'] == 'RedHat' && os['major'] == '6'
-      additional << foreman.operating_system.show_or_ensure({'id' => 'RedHat 7.0',
+      additional << foreman.operatingsystems.show_or_ensure({'id' => 'RedHat 7.0',
                                                              'name' => 'RedHat', 'major' => '7', 'minor' => '0',
                                                              'family' => 'Redhat'}, {})
     end
     if os['name'] == 'CentOS' && os['major'] == '6'
-      additional << foreman.operating_system.show_or_ensure({'id' => 'CentOS 7.0',
+      additional << foreman.operatingsystems.show_or_ensure({'id' => 'CentOS 7.0',
                                                              'name' => 'CentOS', 'major' => '7', 'minor' => '0',
                                                              'family' => 'Redhat'}, {})
     end
@@ -49,7 +49,7 @@ class BaseSeeder
     # the hosts that are provisioned are CentOS 6.6.  We'll need to update this
     # once we have support for the Red Hat content in place
     # (subscriptions...etc.)
-    additional << foreman.operating_system.show_or_ensure({'id' => 'CentOS 6.6',
+    additional << foreman.operatingsystems.show_or_ensure({'id' => 'CentOS 6.6',
                                                            'name' => 'CentOS', 'major' => '6',
                                                            'minor' => '6', 'family' => 'Redhat'}, {})
 
@@ -57,8 +57,8 @@ class BaseSeeder
   end
 
   def find_foreman_host
-    @foreman.host.show! 'id' => @fqdn,
-                        :error_message => "host #{@fqdn} not found in foreman, puppet haven't run yet?"
+    @foreman.hosts.show! 'id' => @fqdn,
+                         :error_message => "host #{@fqdn} not found in foreman, puppet haven't run yet?"
   end
 
 end
