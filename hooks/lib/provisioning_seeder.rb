@@ -19,7 +19,6 @@ class ProvisioningSeeder < BaseSeeder
     @gateway = kafo.param('capsule', 'dhcp_gateway').value
     @kernel = kafo.param('foreman_plugin_discovery', 'kernel').value
     @initrd = kafo.param('foreman_plugin_discovery', 'initrd').value
-    @discovery_env_name = 'discovery'
     @default_root_pass = kafo.param('foreman_plugin_fusor', 'root_password').instance_variable_get('@value')
     @default_ssh_public_key = kafo.param('foreman_plugin_fusor', 'ssh_public_key').value
     @ntp_host = kafo.param('foreman_plugin_fusor', 'ntp_host').value
@@ -29,8 +28,38 @@ class ProvisioningSeeder < BaseSeeder
   def seed
     say HighLine.color("Starting to seed provisioning data", :good)
     default_proxy = find_default_proxy
-    default_environment = find_default_environment
+    default_organization = find_default_organization
+    default_location = find_default_location
     foreman_host = find_foreman_host
+
+    default_lifecycle_environment = @foreman.lifecycle_environments.index({ 'organization_id' => default_organization['id'],
+                                                                            'name' => 'Library' }).first
+
+    default_product = @foreman.products.katello_search_or_ensure({ 'organization_id' => default_organization['id']},
+                                                                 { 'search' => 'name:Fusor' },
+                                                                 { 'name' => 'Fusor' })
+
+    puppet_repo = @foreman.repositories.katello_search_or_ensure({ 'organization_id' => default_organization['id'],
+                                                                   'product_id' => default_product['id']},
+                                                                 { 'search' => 'name:Puppet' },
+                                                                 { 'name' => 'Puppet',
+                                                                   'content_type' => 'puppet' })
+    upload_puppet_modules(puppet_repo)
+
+    default_content_view = @foreman.content_views.katello_search_or_ensure(
+                                                                 { 'organization_id' => default_organization['id'],
+                                                                   'nondefault' => true},
+                                                                 { 'search' => 'name:"Fusor Puppet Content"' },
+                                                                 { 'name' => 'Fusor Puppet Content' })
+
+    @foreman.content_view_puppet_modules.katello_search_or_ensure(
+                                                         { 'content_view_id' => default_content_view['id'] },
+                                                         { 'search' => 'name:ovirt AND author:jcannon' },
+                                                         { 'name' => 'ovirt', 'author' => 'jcannon' })
+
+    publish_task = @foreman.api_resource(:content_views).
+                            action(:publish).
+                            call({ :id => default_content_view['id'] })
 
     default_domain = @foreman.domains.show_or_ensure({'id' => @domain},
                                                     {'name' => @domain,
@@ -88,6 +117,8 @@ class ProvisioningSeeder < BaseSeeder
 
     @hostgroups = []
     @media = []
+    default_puppet_environment = @foreman.environments.show!({'id' => puppet_environment_name(default_organization,
+                                                                                              default_content_view) })
     oses = find_default_oses(foreman_host)
     oses.each do |os|
       next if os['name'] == 'RedHat'
@@ -137,7 +168,10 @@ class ProvisioningSeeder < BaseSeeder
       # creating ovirt hostgroup
       hostgroup_attrs = {'name' => 'oVirt',
                          'parent_id' => hostgroup_base['id'],
-                         'environment_id' => default_environment['id']}
+                         'content_source_id' => default_proxy['id'],
+                         'content_view_id' => default_content_view['id'],
+                         'lifecycle_environment_id' => default_lifecycle_environment['id'],
+                         'environment_id' => default_puppet_environment['id']}
       hostgroup_ovirt = @foreman.hostgroups.search_or_ensure("title = #{hostgroup_base['name']}/#{hostgroup_attrs['name']}", hostgroup_attrs)
       @hostgroups.push hostgroup_ovirt
 
@@ -181,15 +215,16 @@ class ProvisioningSeeder < BaseSeeder
     setup_idle_timeout
     setup_default_root_pass
     setup_ignore_puppet_facts_for_provisioning
-    discovery_environment = create_discovery_env(pxe_template)
 
-    assign_organization({ 'domain' => default_domain, 'subnet' => default_subnet,
+    assign_organization(default_organization,
+                        { 'domain' => default_domain, 'subnet' => default_subnet,
                           'config_templates' => default_config_templates, 'hostgroups' => @hostgroups,
-                          'environments' => [default_environment, discovery_environment],
+                          'environments' => [default_puppet_environment],
                           'media' => @media })
-    assign_location({ 'domain' => default_domain, 'subnet' => default_subnet,
+    assign_location(default_location,
+                    { 'domain' => default_domain, 'subnet' => default_subnet,
                       'config_templates' => default_config_templates, 'hostgroups' => @hostgroups,
-                      'environments' => [default_environment, discovery_environment],
+                      'environments' => [default_puppet_environment],
                       'media' => @media })
   end
 
@@ -216,10 +251,11 @@ class ProvisioningSeeder < BaseSeeder
     class_ids
   end
 
-  def assign_organization(objects)
-    organization = @foreman.organizations.first!(%Q(name = "#{@organization}"))
-    organization = @foreman.organizations.show!('id' => organization['id'])
+  def puppet_environment_name(organization, content_view)
+    "KT_" + organization['label'] + "_Library_" + content_view['label'] + "_" + content_view['id'].to_s
+  end
 
+  def assign_organization(organization, objects)
     domain_ids = organization['domains'].map { |d| d['id'] }
     subnet_ids = organization['subnets'].map { |s| s['id'] }
     config_template_ids = organization['config_templates'].map { |t| t['id'] }
@@ -236,10 +272,7 @@ class ProvisioningSeeder < BaseSeeder
                                                       'medium_ids' => (medium_ids + [objects['media'].map{ |m| m['id'] }]).uniq })
   end
 
-  def assign_location(objects)
-    location = @foreman.locations.first!(%Q(name = "#{@location}"))
-    location = @foreman.locations.show!('id' => location['id'])
-
+  def assign_location(location, objects)
     domain_ids = location['domains'].map { |d| d['id'] }
     subnet_ids = location['subnets'].map { |s| s['id'] }
     config_template_ids = location['config_templates'].map { |t| t['id'] }
@@ -256,17 +289,6 @@ class ProvisioningSeeder < BaseSeeder
                                               'medium_ids' => (medium_ids + [objects['media'].map{ |m| m['id'] }]).uniq })
   end
 
-  def create_discovery_env(template)
-    env = @foreman.environments.show_or_ensure({'id' => @discovery_env_name},
-                                               {'name' => @discovery_env_name})
-    # if the template has combination already, we don't update it
-    unless template.nil? || template['template_combinations'].any? { |c| c['environment_id'] == env['id'].to_i and c['hostgroup_id'].nil? }
-      @foreman.config_templates.update 'id' => template['name'],
-                                       'config_template' => {'template_combinations_attributes' => [{'environment_id' => env['id']}]}
-    end
-    env
-  end
-
   def setup_setting(default_hostgroup)
     @foreman.settings.show_or_ensure({'id' => 'base_hostgroup'},
                                      {'value' => default_hostgroup['name'].to_s})
@@ -277,7 +299,7 @@ class ProvisioningSeeder < BaseSeeder
 
   def setup_idle_timeout
     @foreman.settings.show_or_ensure({'id' => 'idle_timeout'},
-                                     {'value' => 180})
+                                     {'value' => 180.to_s})
   rescue NoMethodError => e
     @logger.error "Setting with name 'idle_timeout' not found, you must run 'foreman-rake db:seed' " +
                       "and rerun installer to fix this issue."
@@ -285,7 +307,7 @@ class ProvisioningSeeder < BaseSeeder
 
   def setup_ignore_puppet_facts_for_provisioning
     @foreman.settings.show_or_ensure({'id' => 'ignore_puppet_facts_for_provisioning'},
-                                     {'value' => true})
+                                     {'value' => 'true'})
   rescue NoMethodError => e
     @logger.error "Setting with name 'ignore_puppet_facts_for_provisioning' not found, you must run 'foreman-rake db:seed' " +
                       "and rerun installer to fix this issue."
@@ -342,11 +364,11 @@ class ProvisioningSeeder < BaseSeeder
       # otherwise we still must check that it's assigned for right os not just family
       assigned_tmpl = @foreman.config_templates.first %Q(name ~ "#{tmpl_name}*" and kind = #{kind_name} and operatingsystem = "#{os['name']}")
       if assigned_tmpl.nil?
-        @foreman.config_template.update 'id' => tmpl['id'], 'config_template' => {'operatingsystem_ids' => [os['id']]}
+        @foreman.config_templates.update 'id' => tmpl['id'], 'config_template' => {'operatingsystem_ids' => [os['id']]}
       else
         assigned_os_ids = @foreman.config_templates.show!('id' => tmpl['id'])['operatingsystems'].map { |o| o['id'] }
         if !assigned_os_ids.include?(os['id'])
-          @foreman.config_template.update 'id' => tmpl['id'], 'config_template' => {'operatingsystem_ids' => assigned_os_ids + [os['id']]}
+          @foreman.config_templates.update 'id' => tmpl['id'], 'config_template' => {'operatingsystem_ids' => assigned_os_ids + [os['id']]}
         end
       end
 
@@ -360,14 +382,27 @@ class ProvisioningSeeder < BaseSeeder
     end
   end
 
-  def find_default_environment
-    @foreman.environments.show! 'id' => @environment,
-                                :error_message => "environment #{@environment} not found in foreman, puppet haven't run yet?"
+  def find_default_organization
+    @foreman.organizations.show! 'id' => @organization,
+                                 :error_message => "organization #{@organization} not found"
+  end
+
+  def find_default_location
+    @foreman.locations.show! 'id' => @location,
+                                 :error_message => "location #{@location} not found"
   end
 
   def find_default_proxy
     @foreman.smart_proxies.show! 'id' => @fqdn,
-                                 :error_message => "smart proxy #{@fqdn} haven't been registered in foreman yet, installer failure?"
+                                 :error_message => "smart proxy #{@fqdn} haven't been registered yet, installer failure?"
+  end
+
+  def upload_puppet_modules(repository)
+    path = "/usr/share/ovirt-puppet/pkg/jcannon-ovirt-0.0.4.tar.gz"
+
+    response = @foreman.api_resource(:repositories).action(:upload_content).
+      call({ :id => repository['id'], :content => ::File.new(path, 'rb')},
+           { :content_type => 'multipart/form-data', :multipart => true })
   end
 
   def kickstart_rhel_default

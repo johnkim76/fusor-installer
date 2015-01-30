@@ -4,6 +4,10 @@ class Foreman
     @api = api
   end
 
+  def api_resource(name)
+    @api.resource(name)
+  end
+
   def method_missing(name, *args, &block)
     name = name.to_sym
     if @api.resources.any? { |r| r.name == name }
@@ -48,11 +52,11 @@ class Foreman
       begin
         object = @api_resource.action(:show).call(identifier)
         if should_update?(object, attributes)
-          object = @api_resource.action(:update).call(identifier.merge({ @api_resource.name.to_s => attributes }))
+          object = @api_resource.action(:update).call(identifier.merge({ @api_resource.singular_name => attributes }))
           object = @api_resource.action(:show).call(identifier)
         end
       rescue RestClient::ResourceNotFound
-        object = @api_resource.action(:create).call({ @api_resource.name.to_s => attributes }.merge(identifier.tap { |h| h.delete('id') }))
+        object = @api_resource.action(:create).call({ @api_resource.singular_name => attributes }.merge(identifier.tap { |h| h.delete('id') }))
       end
       object
     end
@@ -62,11 +66,25 @@ class Foreman
         object = first!(condition)
         if should_update?(object, attributes)
           identifier = { 'id' => object['id'] }
-          object, _ = @api_resource.action(:update).call(identifier.merge({ @name.to_s => attributes }))
+          object, _ = @api_resource.action(:update).call(identifier.merge({ @api_resource.singular_name => attributes }))
           object, _ = @api_resource.action(:show).call(identifier)
         end
       rescue StandardError
-        object, _ = @api_resource.action(:create).call({ @name.to_s => attributes })
+        object, _ = @api_resource.action(:create).call({ @api_resource.singular_name => attributes })
+      end
+      object
+    end
+
+    def katello_search_or_ensure(identifiers, condition, attributes)
+      object = @api_resource.action(:index).call(identifiers.merge(condition))['results'].first
+      if object
+        if should_update?(object, attributes)
+          identifiers.merge({ 'id' => object['id'] })
+          object = @api_resource.action(:update).call(identifiers.merge(attributes))
+          object = @api_resource.action(:show).call(identifiers)
+        end
+      else
+        object = @api_resource.action(:create).call(identifiers.merge(attributes))
       end
       object
     end

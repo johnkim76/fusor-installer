@@ -34,14 +34,14 @@ class BaseSeeder
   def additional_oses(os)
     additional = []
     if os['name'] == 'RedHat' && os['major'] == '6'
-      additional << foreman.operatingsystems.show_or_ensure({'id' => 'RedHat 7.0',
-                                                             'name' => 'RedHat', 'major' => '7', 'minor' => '0',
-                                                             'family' => 'Redhat'}, {})
+      additional << foreman.operatingsystems.show_or_ensure({'id' => 'RedHat 7.0'},
+                                                            {'name' => 'RedHat', 'major' => '7', 'minor' => '0',
+                                                             'family' => 'Redhat'})
     end
     if os['name'] == 'CentOS' && os['major'] == '6'
-      additional << foreman.operatingsystems.show_or_ensure({'id' => 'CentOS 7.0',
-                                                             'name' => 'CentOS', 'major' => '7', 'minor' => '0',
-                                                             'family' => 'Redhat'}, {})
+      additional << foreman.operatingsystems.show_or_ensure({'id' => 'CentOS 7.0'},
+                                                            {'name' => 'CentOS', 'major' => '7', 'minor' => '0',
+                                                             'family' => 'Redhat'})
     end
 
     # TODO: The creation of OS is currently based upon the OS of the server;
@@ -49,9 +49,9 @@ class BaseSeeder
     # the hosts that are provisioned are CentOS 6.6.  We'll need to update this
     # once we have support for the Red Hat content in place
     # (subscriptions...etc.)
-    additional << foreman.operatingsystems.show_or_ensure({'id' => 'CentOS 6.6',
-                                                           'name' => 'CentOS', 'major' => '6',
-                                                           'minor' => '6', 'family' => 'Redhat'}, {})
+    additional << foreman.operatingsystems.show_or_ensure({'id' => 'CentOS 6.6'},
+                                                          {'name' => 'CentOS', 'major' => '6',
+                                                           'minor' => '6', 'family' => 'Redhat'})
 
     additional
   end
