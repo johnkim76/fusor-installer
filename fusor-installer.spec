@@ -24,6 +24,11 @@ Requires:   ntp
 Requires:   rubygem-kafo >= 0.6.4
 Requires:   rubygem-foreman_api >= 0.1.4
 Requires:   git
+#
+# Adding a hack because we can't work with puppet 3.7.4
+# Issue with chkconfig on el7 being invoked instead of systemctl
+Requires:   puppet = 3.7.3
+Requires:   puppet-server = 3.7.3
 
 %description
 This is a Foreman-Installer plugin that allows you to install and configure
