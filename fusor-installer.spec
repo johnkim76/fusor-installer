@@ -9,7 +9,7 @@
 
 Name:       fusor-installer
 Epoch:      1
-Version:    0.0.2
+Version:    0.0.3
 Release:    1%{?dotalphatag}%{?dist}
 Summary:    Foreman-installer plugin that allows you to install Fusor
 Group:      Applications/System
@@ -78,6 +78,10 @@ cp config/fusor-installer.answers.yaml %{buildroot}%{_sysconfdir}/katello-instal
 %{_bindir}/fusor-register-host
 
 %changelog
+* Tue Feb 03 2015 John Matthews <jwmatthews@gmail.com> 0.0.3-1
+- Adding a HACK workaround to force puppet to be 3.7.3 Needed to address a
+  known issue with puppet 3.7.4 (jwmatthews@gmail.com)
+
 * Mon Jan 19 2015 John Matthews <jwmatthews@gmail.com> 0.0.2-1
 - new package built with tito
 
