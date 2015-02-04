@@ -17,6 +17,7 @@ class Foreman
       :environment => 'Environment',
       :setting => 'Setting',
       :template_combination => 'TemplateCombination',
+      :puppetclass => 'Puppetclass',
   }
 
   def initialize(options)
@@ -83,6 +84,20 @@ class Foreman
         object, _ = @api_resource.show(*args)
       rescue RestClient::ResourceNotFound
         raise StandardError, error_message
+      end
+      object
+    end
+
+    def search_or_ensure(condition, attributes)
+      begin
+        object = first!(condition)
+        if should_update?(object, attributes)
+          identifier = { 'id' => object['id'] }
+          object, _ = @api_resource.update(identifier.merge({@name.to_s => attributes}))
+          object, _ = @api_resource.show(identifier)
+        end
+      rescue StandardError
+        object, _ = @api_resource.create({@name.to_s => attributes})
       end
       object
     end

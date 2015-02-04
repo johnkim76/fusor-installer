@@ -37,7 +37,8 @@ capsule:
   puppetca: true
 
 foreman::plugin::bootdisk: true
-foreman::plugin::discovery: true
+foreman::plugin::discovery:
+  install_images: true
 foreman::plugin::hooks: true
 foreman::plugin::tasks: true
 foreman::plugin::chef: false
