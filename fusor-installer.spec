@@ -26,9 +26,6 @@ Requires:   rubygem-foreman_api >= 0.1.4
 Requires:   git
 Requires:   ovirt-puppet
 
-Requires:   puppet
-Requires:   puppet-server
-
 %description
 This is a Foreman-Installer plugin that allows you to install and configure
 the Fusor Foreman plugin
