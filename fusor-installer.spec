@@ -24,6 +24,7 @@ Requires:   ntp
 Requires:   rubygem-kafo >= 0.6.4
 Requires:   rubygem-foreman_api >= 0.1.4
 Requires:   git
+Requires:   ovirt-puppet
 
 Requires:   puppet
 Requires:   puppet-server
