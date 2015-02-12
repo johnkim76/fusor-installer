@@ -9,7 +9,7 @@
 
 Name:       fusor-installer
 Epoch:      1
-Version:    0.0.3
+Version:    0.0.4
 Release:    1%{?dotalphatag}%{?dist}
 Summary:    Foreman-installer plugin that allows you to install Fusor
 Group:      Applications/System
@@ -76,6 +76,13 @@ cp config/fusor-installer.answers.yaml %{buildroot}%{_sysconfdir}/katello-instal
 %{_bindir}/fusor-register-host
 
 %changelog
+* Thu Feb 12 2015 John Matthews <jwmatthews@gmail.com> 0.0.4-1
+- Removed requirement of puppet 3.7.3 (jwmatthews@gmail.com)
+- foreman discovery: updates to support discovery (bbuckingham@redhat.com)
+- ovirt - initial seeding to support ovirt (bbuckingham@redhat.com)
+- remove partitioning table seed that was specific to openstack with staypuft
+  (bbuckingham@redhat.com)
+
 * Tue Feb 03 2015 John Matthews <jwmatthews@gmail.com> 0.0.3-1
 - Adding a HACK workaround to force puppet to be 3.7.3 Needed to address a
   known issue with puppet 3.7.4 (jwmatthews@gmail.com)
