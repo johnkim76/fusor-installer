@@ -11,7 +11,7 @@ OVIRT_MODULE=/usr/share/ovirt-puppet/
 # copy modules from the package to the puppet environment
 
 if [[ ! -e $TARGET ]]; then
-    mkdir $TARGET
+    mkdir -p $TARGET
 fi
 
 cp -r $OVIRT_MODULE $TARGET
