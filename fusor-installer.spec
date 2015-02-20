@@ -9,7 +9,7 @@
 
 Name:       fusor-installer
 Epoch:      1
-Version:    0.0.6
+Version:    0.0.7
 Release:    1%{?dotalphatag}%{?dist}
 Summary:    Foreman-installer plugin that allows you to install Fusor
 Group:      Applications/System
@@ -77,6 +77,9 @@ cp config/fusor-installer.answers.yaml %{buildroot}%{_sysconfdir}/katello-instal
 %{_bindir}/fusor-register-host
 
 %changelog
+* Fri Feb 20 2015 John Matthews <jwmatthews@gmail.com> 0.0.7-1
+- Disable the download of discovery images. (jwmatthews@gmail.com)
+
 * Thu Feb 12 2015 John Matthews <jwmatthews@gmail.com> 0.0.6-1
 - Fix for when /etc/puppet/environments/production/ is missing
   (jwmatthews@gmail.com)
