@@ -1,41 +1,25 @@
 class Foreman
-  RESOURCES = {
-      :organization => 'Organization',
-      :location => 'Location',
-      :subnet => 'Subnet',
-      :domain => 'Domain',
-      :smart_proxy => 'SmartProxy',
-      :host => 'Host',
-      :config_template => 'ConfigTemplate',
-      :operating_system => 'OperatingSystem',
-      :medium => 'Medium',
-      :template_kind => 'TemplateKind',
-      :os_default_template => 'OsDefaultTemplate',
-      :partition_table => 'Ptable',
-      :parameter => 'Parameter',
-      :hostgroup => 'Hostgroup',
-      :environment => 'Environment',
-      :setting => 'Setting',
-      :template_combination => 'TemplateCombination',
-      :puppetclass => 'Puppetclass',
-  }
 
-  def initialize(options)
-    @options = options
-    @resource = Hash.new { |h, k| h[k] = Resource.new(ForemanApi::Resources.const_get(RESOURCES[k]).new(@options), k) }
+  def initialize(api)
+    @api = api
+  end
+
+  def api_resource(name)
+    @api.resource(name)
   end
 
   def method_missing(name, *args, &block)
     name = name.to_sym
-    if RESOURCES.keys.include?(name)
-      @resource[name]
+    if @api.resources.any? { |r| r.name == name }
+      Resource.new(@api.resource(name))
     else
       super
     end
   end
 
   def respond_to?(name)
-    if RESOURCES.keys.include?(name)
+    name = name.to_sym
+    if @api.resources.any? { |r| r.name == name }
       true
     else
       super
@@ -43,47 +27,36 @@ class Foreman
   end
 
   def version
-    version, _ = ForemanApi::Base.new(@options).http_call 'get', '/api/status'
+    version = @api.resource(:home).action(:status).call
     version['version']
   end
 
   class Resource
-    def initialize(api_resource, name)
+    def initialize(api_resource)
       @api_resource = api_resource
-      @name = name
     end
 
     def method_missing(name, *args, &block)
-      if @api_resource.respond_to?(name)
-        @api_resource.send name, *args, &block
+      if @api_resource.actions.any? { |a| a.name == name }
+        @api_resource.call(name, *args, &block)
       else
         super
       end
     end
 
     def respond_to?(name)
-      @api_resource.respond_to?(name) || super
+      @api_resource.actions.any? { |a| a.name == name } || super
     end
 
     def show_or_ensure(identifier, attributes)
       begin
-        object, _ = @api_resource.show(identifier)
+        object = @api_resource.action(:show).call(identifier)
         if should_update?(object, attributes)
-          object, _ = @api_resource.update(identifier.merge({@name.to_s => attributes}))
-          object, _ = @api_resource.show(identifier)
+          object = @api_resource.action(:update).call(identifier.merge({ @api_resource.singular_name => attributes }))
+          object = @api_resource.action(:show).call(identifier)
         end
       rescue RestClient::ResourceNotFound
-        object, _ = @api_resource.create({@name.to_s => attributes}.merge(identifier.tap {|h| h.delete('id')}))
-      end
-      object
-    end
-
-    def show!(*args)
-      error_message = args.delete(:error_message) || 'unknown error'
-      begin
-        object, _ = @api_resource.show(*args)
-      rescue RestClient::ResourceNotFound
-        raise StandardError, error_message
+        object = @api_resource.action(:create).call({ @api_resource.singular_name => attributes }.merge(identifier.tap { |h| h.delete('id') }))
       end
       object
     end
@@ -93,17 +66,41 @@ class Foreman
         object = first!(condition)
         if should_update?(object, attributes)
           identifier = { 'id' => object['id'] }
-          object, _ = @api_resource.update(identifier.merge({@name.to_s => attributes}))
-          object, _ = @api_resource.show(identifier)
+          object, _ = @api_resource.action(:update).call(identifier.merge({ @api_resource.singular_name => attributes }))
+          object, _ = @api_resource.action(:show).call(identifier)
         end
       rescue StandardError
-        object, _ = @api_resource.create({@name.to_s => attributes})
+        object, _ = @api_resource.action(:create).call({ @api_resource.singular_name => attributes })
+      end
+      object
+    end
+
+    def katello_search_or_ensure(identifiers, condition, attributes)
+      object = @api_resource.action(:index).call(identifiers.merge(condition))['results'].first
+      if object
+        if should_update?(object, attributes)
+          identifiers.merge({ 'id' => object['id'] })
+          object = @api_resource.action(:update).call(identifiers.merge(attributes))
+          object = @api_resource.action(:show).call(identifiers)
+        end
+      else
+        object = @api_resource.action(:create).call(identifiers.merge(attributes))
+      end
+      object
+    end
+
+    def show!(*args)
+      error_message = args.delete(:error_message) || 'unknown error'
+      begin
+        object = @api_resource.action(:show).call(*args)
+      rescue RestClient::ResourceNotFound
+        raise StandardError, error_message
       end
       object
     end
 
     def index(*args)
-      object, _ = @api_resource.index(*args)
+      object = @api_resource.action(:index).call(*args)
       object['results']
     end
 
