@@ -745,7 +745,7 @@ ONTIMEOUT discovery
 LABEL discovery
 MENU LABEL Foreman Discovery
 KERNEL boot/#{@kernel}
-APPEND initrd=boot/#{@initrd} rootflags=loop root=live:/fdi.iso rootfstype=auto ro rd.live.image acpi=force rd.luks=0 rd.md=0 rd.dm=0 rd.lvm=0 rd.bootif=0 rd.neednet=0 nomodeset proxy.url=https://#{@foreman_url} proxy.type=foreman
+APPEND initrd=boot/#{@initrd} rootflags=loop root=live:/fdi.iso rootfstype=auto ro rd.live.image acpi=force rd.luks=0 rd.md=0 rd.dm=0 rd.lvm=0 rd.bootif=0 rd.neednet=0 nomodeset proxy.url=#{@foreman_url} proxy.type=foreman
 IPAPPEND 2
 EOS
   end
