@@ -9,7 +9,7 @@
 
 Name:       fusor-installer
 Epoch:      1
-Version:    0.0.7
+Version:    0.0.8
 Release:    1%{?dotalphatag}%{?dist}
 Summary:    Foreman-installer plugin that allows you to install Fusor
 Group:      Applications/System
@@ -73,6 +73,15 @@ cp config/fusor-installer.answers.yaml %{buildroot}%{_sysconfdir}/katello-instal
 %{_bindir}/fusor-register-host
 
 %changelog
+* Tue Mar 03 2015 John Matthews <jwmatthews@gmail.com> 0.0.8-1
+- Updates for discovery to work with foreman-discovery-image-2.1.0
+  (jwmatthews@gmail.com)
+- spec - remove Requires on foreman_api (bbuckingham@redhat.com)
+- spec - removing hack that required puppet 3.7.3 (bbuckingham@redhat.com)
+- seeding: update use katello's content management (bbuckingham@redhat.com)
+- seeding: update to use apipie bindings vs foreman api
+  (bbuckingham@redhat.com)
+
 * Fri Feb 20 2015 John Matthews <jwmatthews@gmail.com> 0.0.7-1
 - Disable the download of discovery images. (jwmatthews@gmail.com)
 
