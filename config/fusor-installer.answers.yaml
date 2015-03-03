@@ -38,7 +38,9 @@ capsule:
 
 foreman::plugin::bootdisk: true
 foreman::plugin::discovery:
-  install_images: false
+  # Overriding kernel/initrd to match what is in foreman-discovery-image (needed as of 2/27/15)
+  kernel: fdi-image-rhel_7-vmlinuz
+  initrd: fdi-image-rhel_7-img
 foreman::plugin::hooks: true
 foreman::plugin::tasks: true
 foreman::plugin::chef: false
