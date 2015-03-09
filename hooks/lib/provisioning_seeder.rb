@@ -762,6 +762,15 @@ EOS
 
   def custom_deployment_repositories_snippet
     <<'EOS'
+
+
+###
+### - JWM Commenting Out: 3/9/15
+###
+<% 
+=begin %>
+
+
 # custom deployment repositories
 <% if @host.deployment.has_custom_repos? -%>
 yum -t -y -e 0 install yum-plugin-priorities
@@ -778,6 +787,12 @@ enabled=1
 EOF
 <% end %>
 <% end %>
+
+<% 
+=end %>
+###
+### - JWM, end of comment Out
+###
 EOS
   end
 
@@ -910,6 +925,14 @@ EOF
 
 <% end %>
 
+###
+### - JWM Comment Out: 3/9/15
+###
+<% 
+=begin %>
+
+
+
 # get name of provisioning interface
 PROVISION_IFACE=$(ip route  | awk '$1 == "default" {print $5}' | head -1)
 echo "found provisioning interface = $PROVISION_IFACE"
@@ -954,6 +977,13 @@ for i in $IFACES; do
         ' /etc/sysconfig/network-scripts/ifcfg-$i
     fi 
 done
+
+<% 
+=end %>
+###
+### - JWM end of comment out
+###
+%>
 
 EOS
   end
