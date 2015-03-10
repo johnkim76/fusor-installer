@@ -9,7 +9,7 @@
 
 Name:       fusor-installer
 Epoch:      1
-Version:    0.0.9
+Version:    0.0.10
 Release:    1%{?dotalphatag}%{?dist}
 Summary:    Foreman-installer plugin that allows you to install Fusor
 Group:      Applications/System
@@ -73,6 +73,11 @@ cp config/fusor-installer.answers.yaml %{buildroot}%{_sysconfdir}/katello-instal
 %{_bindir}/fusor-register-host
 
 %changelog
+* Tue Mar 10 2015 John Matthews <jwmatthews@gmail.com> 0.0.10-1
+- Comment out blocks in ks_snippets which break provisioning. Syntax issues
+  with usage of:   @host.network_query   def custom_deployment_repositories
+  (jwmatthews@gmail.com)
+
 * Tue Mar 03 2015 John Matthews <jwmatthews@gmail.com> 0.0.9-1
 - Remove extra https:// in PXE Template for specifying foreman URL
   (jwmatthews@gmail.com)
