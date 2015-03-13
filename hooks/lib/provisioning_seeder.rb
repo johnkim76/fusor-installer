@@ -32,9 +32,6 @@ class ProvisioningSeeder < BaseSeeder
     default_location = find_default_location
     foreman_host = find_foreman_host
 
-    default_lifecycle_environment = @foreman.lifecycle_environments.index({ 'organization_id' => default_organization['id'],
-                                                                            'name' => 'Library' }).first
-
     default_product = @foreman.products.katello_search_or_ensure({ 'organization_id' => default_organization['id']},
                                                                  { 'search' => 'name:Fusor' },
                                                                  { 'name' => 'Fusor' })
@@ -115,7 +112,6 @@ class ProvisioningSeeder < BaseSeeder
 
     @foreman.config_templates.build_pxe_default
 
-    @hostgroups = []
     @media = []
     default_puppet_environment = @foreman.environments.show!({'id' => puppet_environment_name(default_organization,
                                                                                               default_content_view) })
@@ -146,50 +142,6 @@ class ProvisioningSeeder < BaseSeeder
       @media.push medium unless medium.nil?
 
       assign_provisioning_templates(os)
-      ptable = assign_partition_tables(os)
-
-      hostgroup_attrs = {'name' => group_id,
-                         'architecture_id' => foreman_host['architecture_id'],
-                         'domain_id' => default_domain['id'],
-                         'operatingsystem_id' => os['id'],
-                         'ptable_id' => ptable['id'],
-                         'puppet_ca_proxy_id' => default_proxy['id'],
-                         'puppet_proxy_id' => default_proxy['id'],
-                         'subnet_id' => default_subnet['id']}
-      hostgroup_attrs['medium_id'] = medium['id'] unless medium.nil?
-
-      hostgroup_base = @foreman.hostgroups.show_or_ensure({'id' => group_id}, hostgroup_attrs)
-      @hostgroups.push hostgroup_base
-
-      # TODO: hostgroup creation... when we move to the foreman deployment feature,
-      # it has been mentioned that we should no longer need to create these, as 
-      # that feature will automatically create them based upon the needs of the deployment
-      #
-      # creating ovirt hostgroup
-      hostgroup_attrs = {'name' => 'oVirt',
-                         'parent_id' => hostgroup_base['id'],
-                         'content_source_id' => default_proxy['id'],
-                         'content_view_id' => default_content_view['id'],
-                         'lifecycle_environment_id' => default_lifecycle_environment['id'],
-                         'environment_id' => default_puppet_environment['id']}
-      hostgroup_ovirt = @foreman.hostgroups.search_or_ensure("title = #{hostgroup_base['name']}/#{hostgroup_attrs['name']}", hostgroup_attrs)
-      @hostgroups.push hostgroup_ovirt
-
-      # creating ovirt-engine hostgroup
-      puppetclass_ids = ovirt_engine_puppetclass_ids('ovirt')
-      hostgroup_attrs = {'name' => 'oVirt-Engines',
-                         'parent_id' => hostgroup_ovirt['id'],
-                         'puppetclass_ids' => puppetclass_ids}
-      hostgroup_ovirt_engines = @foreman.hostgroups.search_or_ensure("title = #{hostgroup_base['name']}/#{hostgroup_ovirt['name']}/#{hostgroup_attrs['name']}", hostgroup_attrs)
-      @hostgroups.push hostgroup_ovirt_engines
-
-      # creating ovirt-hypervisor hostgroup
-      puppetclass_ids = ovirt_hypervisor_puppetclass_ids('ovirt')
-      hostgroup_attrs = {'name' => 'oVirt-Hypervisors',
-                         'parent_id' => hostgroup_ovirt['id'],
-                         'puppetclass_ids' => puppetclass_ids}
-      hostgroup_ovirt_hypervisors = @foreman.hostgroups.search_or_ensure("title = #{hostgroup_base['name']}/#{hostgroup_ovirt['name']}/#{hostgroup_attrs['name']}", hostgroup_attrs)
-      @hostgroups.push hostgroup_ovirt_hypervisors
 
       if !@default_ssh_public_key.nil? && !@default_ssh_public_key.empty?
         @foreman.parameters.show_or_ensure({'id' => 'ssh_public_key', 'operatingsystem_id' => os['id']},
@@ -198,6 +150,7 @@ class ProvisioningSeeder < BaseSeeder
                                              'value' => @default_ssh_public_key,
                                            })
       end
+
       @foreman.parameters.show_or_ensure({'id' => 'ntp-server', 'operatingsystem_id' => os['id']},
                                          {
                                            'name' => 'ntp-server',
@@ -210,7 +163,11 @@ class ProvisioningSeeder < BaseSeeder
                                          })
     end
 
-    default_hostgroup = @hostgroups.last
+    hostgroup_attrs = {'name' => "Fusor Base",
+                       'domain_id' => default_domain['id'],
+                       'subnet_id' => default_subnet['id']}
+    default_hostgroup = @foreman.hostgroups.show_or_ensure({'id' => group_id}, hostgroup_attrs)
+
     setup_setting(default_hostgroup)
     setup_idle_timeout
     setup_default_root_pass
@@ -218,38 +175,17 @@ class ProvisioningSeeder < BaseSeeder
 
     assign_organization(default_organization,
                         { 'domain' => default_domain, 'subnet' => default_subnet,
-                          'config_templates' => default_config_templates, 'hostgroups' => @hostgroups,
+                          'config_templates' => default_config_templates, 'hostgroups' => [default_hostgroup],
                           'environments' => [default_puppet_environment],
                           'media' => @media })
     assign_location(default_location,
                     { 'domain' => default_domain, 'subnet' => default_subnet,
-                      'config_templates' => default_config_templates, 'hostgroups' => @hostgroups,
+                      'config_templates' => default_config_templates, 'hostgroups' => [default_hostgroup],
                       'environments' => [default_puppet_environment],
                       'media' => @media })
   end
 
   private
-
-  def ovirt_engine_puppetclass_ids(search_string)
-    class_ids = []
-    classes = @foreman.puppetclasses.index('search' => search_string, 'style' => 'list')
-
-    class_ids.push(classes.find{ |c| c['name'] == 'ovirt' }['id'])
-    class_ids.push(classes.find{ |c| c['name'] == 'ovirt::repo' }['id'])
-    class_ids.push(classes.find{ |c| c['name'] == 'ovirt::engine::config' }['id'])
-    class_ids.push(classes.find{ |c| c['name'] == 'ovirt::engine::packages' }['id'])
-    class_ids.push(classes.find{ |c| c['name'] == 'ovirt::engine::setup' }['id'])
-    class_ids
-  end
-
-  def ovirt_hypervisor_puppetclass_ids(search_string)
-    class_ids = []
-    classes = @foreman.puppetclasses.index('search' => search_string, 'style' => 'list')
-
-    class_ids.push(classes.find{ |c| c['name'] == 'ovirt' }['id'])
-    class_ids.push(classes.find{ |c| c['name'] == 'ovirt::hypervisor::packages' }['id'])
-    class_ids
-  end
 
   def puppet_environment_name(organization, content_view)
     "KT_" + organization['label'] + "_Library_" + content_view['label'] + "_" + content_view['id'].to_s
@@ -320,23 +256,6 @@ class ProvisioningSeeder < BaseSeeder
   rescue NoMethodError => e
     @logger.error "Setting with name 'root_pass' not found, you must run 'foreman-rake db:seed' " +
                       "and rerun installer to fix this issue."
-  end
-
-  def assign_partition_tables(os)
-    if os['family'] == 'Redhat'
-      default_ptable_name = 'Kickstart default'
-      additional_ptables_names = []
-    end
-    default_ptable = nil
-    additional_ptables_names.push(default_ptable_name).each do |ptable_name|
-      ptable = @foreman.ptables.first! %Q(name ~ "#{ptable_name}*")
-      default_ptable = ptable if default_ptable_name == ptable['name']
-      if os['ptables'].nil? || os['ptables'].empty?
-        ids = @foreman.ptables.show!('id' => ptable['id'])['operatingsystems'].map { |o| o['id'] }
-        @foreman.ptables.update 'id' => ptable['id'], 'ptable' => {'operatingsystem_ids' => (ids + [os['id']]).uniq}
-      end
-    end
-    default_ptable
   end
 
   def assign_provisioning_templates(os)
