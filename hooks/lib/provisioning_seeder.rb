@@ -17,12 +17,14 @@ class ProvisioningSeeder < BaseSeeder
     @from = kafo.param('foreman_plugin_fusor', 'from').value
     @to = kafo.param('foreman_plugin_fusor', 'to').value
     @gateway = kafo.param('capsule', 'dhcp_gateway').value
-    @kernel = kafo.param('foreman_plugin_discovery', 'kernel').value
-    @initrd = kafo.param('foreman_plugin_discovery', 'initrd').value
+    
     @default_root_pass = kafo.param('foreman_plugin_fusor', 'root_password').instance_variable_get('@value')
     @default_ssh_public_key = kafo.param('foreman_plugin_fusor', 'ssh_public_key').value
     @ntp_host = kafo.param('foreman_plugin_fusor', 'ntp_host').value
     @timezone = kafo.param('foreman_plugin_fusor', 'timezone').value
+
+    @kernel = "fdi-image-rhel_7-vmlinuz"
+    @initrd = "fdi-image-rhel_7-img"
   end
 
   def seed

@@ -3,7 +3,6 @@ if app_value(:provisioning_wizard) != 'none'
   add_module('foreman::plugin::fusor',
              {:manifest_name => 'plugin/fusor',  :dir_name => 'foreman'})
 
-  # make sure discovery and foreman-tasks are enabled
-  kafo.module('foreman_plugin_discovery').enable
+  # make sure foreman-tasks is enabled
   kafo.module('foreman_plugin_tasks').enable
 end
