@@ -9,7 +9,7 @@
 
 Name:       fusor-installer
 Epoch:      1
-Version:    0.0.10
+Version:    0.0.11
 Release:    1%{?dotalphatag}%{?dist}
 Summary:    Foreman-installer plugin that allows you to install Fusor
 Group:      Applications/System
@@ -73,6 +73,12 @@ cp config/fusor-installer.answers.yaml %{buildroot}%{_sysconfdir}/katello-instal
 %{_bindir}/fusor-register-host
 
 %changelog
+* Thu Mar 19 2015 John Matthews <jwmatthews@gmail.com> 0.0.11-1
+- Updates from testing with Sat 6.1 3.11.1 compose  - Add stanza for gutterball
+  config  - Hard code parameters for kernel/initrd of foreman plugin discovery
+  since puppet params have been deleted  - Remove explicit enable of
+  foreman_plugin_discovery (jwmatthews@gmail.com)
+
 * Tue Mar 10 2015 John Matthews <jwmatthews@gmail.com> 0.0.10-1
 - Comment out blocks in ks_snippets which break provisioning. Syntax issues
   with usage of:   @host.network_query   def custom_deployment_repositories
