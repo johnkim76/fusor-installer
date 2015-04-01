@@ -168,7 +168,7 @@ class ProvisioningSeeder < BaseSeeder
     hostgroup_attrs = {'name' => "Fusor Base",
                        'domain_id' => default_domain['id'],
                        'subnet_id' => default_subnet['id']}
-    default_hostgroup = @foreman.hostgroups.show_or_ensure({'id' => group_id}, hostgroup_attrs)
+    default_hostgroup = @foreman.hostgroups.show_or_ensure({'id' => "Fusor Base"}, hostgroup_attrs)
 
     setup_setting(default_hostgroup)
     setup_idle_timeout
