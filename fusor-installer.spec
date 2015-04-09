@@ -9,7 +9,7 @@
 
 Name:       fusor-installer
 Epoch:      1
-Version:    0.0.13
+Version:    0.0.14
 Release:    1%{?dotalphatag}%{?dist}
 Summary:    Foreman-installer plugin that allows you to install Fusor
 Group:      Applications/System
@@ -73,6 +73,9 @@ cp config/fusor-installer.answers.yaml %{buildroot}%{_sysconfdir}/katello-instal
 %{_bindir}/fusor-register-host
 
 %changelog
+* Thu Apr 09 2015 John Matthews <jwmatthews@gmail.com> 0.0.14-1
+- answers: add gutterball plugin (bbuckingham@redhat.com)
+
 * Tue Mar 31 2015 John Matthews <jwmatthews@gmail.com> 0.0.13-1
 - seeding: fix the hostgroup seeding for 'Fusor Base' (bbuckingham@redhat.com)
 
