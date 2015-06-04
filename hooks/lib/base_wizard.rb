@@ -34,7 +34,6 @@ class BaseWizard
     configure = @kafo.config.app[:provisioning_wizard] != 'non-interactive'
     while configure
       send("get_#{configure}") if configure.is_a?(Symbol)
-      print_configuration
       configure = get_ready
       configure = true if !configure && !validate
     end
@@ -101,7 +100,7 @@ class BaseWizard
       menu.header = HighLine.color("\nHow would you like to proceed?", :important)
       menu.prompt = ''
       menu.select_by = :index
-      menu.choice(HighLine.color('Proceed with the above values', :run)) { false }
+      menu.choice(HighLine.color('Proceed with the values shown', :run)) { false }
       self.class.order.each do |attr|
         name = self.class.attrs[attr.to_sym]
         value = kafo_param(attr).is_a?(Kafo::Params::Password) && @hide_password ? '*' * send(attr).size : send(attr)
