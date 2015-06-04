@@ -104,7 +104,9 @@ class BaseWizard
       menu.choice(HighLine.color('Proceed with the above values', :run)) { false }
       self.class.order.each do |attr|
         name = self.class.attrs[attr.to_sym]
-        label = self.class.custom_labels[attr.to_sym] || "Change #{name}"
+        value = kafo_param(attr).is_a?(Kafo::Params::Password) && @hide_password ? '*' * send(attr).size : send(attr)
+        
+        label = self.class.custom_labels[attr.to_sym] || "Change #{name}".rjust(27) + "   #{value}" 
         label = "Do not " + label.downcase if send(attr).is_a?(TrueClass)
         label = label
         menu.choice(label) { attr.to_sym }
