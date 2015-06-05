@@ -8,7 +8,7 @@ if app_value(:provisioning_wizard) != 'none' && [0,2].include?(kafo.exit_code)
   # we must enforce at least one puppet run
   logger.debug 'Running puppet agent to seed foreman data'
   `service puppet stop`
-  `puppet agent -t`
+  `puppet agent -t --no-pluginsync`
   `service puppet start`
   logger.debug 'Puppet agent run finished'
 
