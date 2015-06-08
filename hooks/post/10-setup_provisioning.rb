@@ -1,13 +1,22 @@
+require 'facter'
+
 if app_value(:provisioning_wizard) != 'none' && [0,2].include?(kafo.exit_code)
   require File.join(KafoConfigure.root_dir, 'hooks', 'lib', 'foreman.rb')
   require File.join(KafoConfigure.root_dir, 'hooks', 'lib', 'base_seeder.rb')
+  require File.join(KafoConfigure.root_dir, 'hooks', 'lib', 'host_seeder.rb')
   require File.join(KafoConfigure.root_dir, 'hooks', 'lib', 'provisioning_seeder.rb')
 
   puts "Starting configuration..."
 
+  host_seeder = HostSeeder.new(kafo)
+  host_seeder.seed
+
   # we must enforce at least one puppet run
   logger.debug 'Running puppet agent to seed foreman data'
+  fqdn =  Facter.value('fqdn')
+  `su puppet --shell /bin/bash -c 'mkdir -p /var/lib/puppet/yaml/facts/'`
   `service puppet stop`
+  `su puppet --shell /bin/bash -c 'puppet facts find #{fqdn} --render-as yaml > /var/lib/puppet/yaml/facts/#{fqdn}.yaml'`
   `puppet agent -t --no-pluginsync`
   `service puppet start`
   logger.debug 'Puppet agent run finished'
