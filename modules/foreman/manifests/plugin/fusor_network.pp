@@ -56,10 +56,22 @@ class foreman::plugin::fusor_network(
   }
 
   if ($configure_firewall) {
-    # We don't want to purge rules other than we specify below (could disable ssh etc)
     resources { "firewall":
-      purge => false
+      purge => true,
+      require => Package['iptables-services'],
     } ->
+    resources { 'firewallchain':
+      purge => true,
+      require => Package['iptables-services'],
+    }
+
+    Firewall {
+      before  => Class['foreman::plugin::fusor_fw_post'],
+      require => Class['foreman::plugin::fusor_fw_pre'],
+    }
+
+    class { ['foreman::plugin::fusor_fw_post', 'foreman::plugin::fusor_fw_pre', 'firewall']: }
+
     # The Foreman server should accept ssh connections for management.
     firewall { '22 accept - ssh':
       port   => '22',
