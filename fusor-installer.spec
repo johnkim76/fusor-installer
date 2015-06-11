@@ -66,8 +66,6 @@ cp config/fusor-installer.answers.yaml %{buildroot}%{_sysconfdir}/katello-instal
 %{_datadir}/katello-installer/modules/network
 %{_datadir}/katello-installer/modules/foreman/manifests/plugin/fusor.pp
 %{_datadir}/katello-installer/modules/foreman/manifests/plugin/fusor_network.pp
-%{_datadir}/katello-installer/modules/foreman/manifests/plugin/fusor_fw_pre.pp
-%{_datadir}/katello-installer/modules/foreman/manifests/plugin/fusor_fw_post.pp
 %config %attr(600, root, root) %{_sysconfdir}/katello-installer/fusor-installer.yaml
 %config(noreplace) %attr(600, root, root) %{_sysconfdir}/katello-installer/fusor-installer.answers.yaml
 %{_sbindir}/fusor-installer

@@ -56,91 +56,136 @@ class foreman::plugin::fusor_network(
   }
 
   if ($configure_firewall) {
-    resources { "firewall":
-      purge => true,
-      require => Package['iptables-services'],
+
+    # The puppetlabs-firewall module does not currently support firewalld.
+    # It also cannot handle clearing all the chains firewalld creates.
+    # Starting iptables before firewalld is stopped also does not clean up properly.
+    # Therefore, to get consistent results, we must methodically stop firewalld first.
+    # Then stop iptables, save the blank policy, then create the new rules.
+    class { 'firewall': }
+    package {'firewalld': 
+      ensure => installed,
     } ->
-    resources { 'firewallchain':
-      purge => true,
-      require => Package['iptables-services'],
-    }
-
-    Firewall {
-      before  => Class['foreman::plugin::fusor_fw_post'],
-      require => Class['foreman::plugin::fusor_fw_pre'],
-    }
-
-    class { ['foreman::plugin::fusor_fw_post', 'foreman::plugin::fusor_fw_pre', 'firewall']: }
-
+    package {'iptables-services':
+      ensure => installed,
+    } ->
+    service {'firewalld':
+      enable  => 'false',
+      ensure  => 'stopped',
+      require => [ Package['firewalld'], Package['iptables-services'], ],
+    } ->
+    exec {'save-blank-policy':
+      command => "service iptables stop; iptables-save > /etc/sysconfig/iptables",
+      path    => "/usr/bin/:/usr/sbin/",
+      require => Service['firewalld'],
+      before  => Service['iptables'],
+    } ->
+    #Add standard rules to accept icmp, lo, and related/established traffic.
+    firewall { '000 accept related established rules':
+      proto   => 'all',
+      state => ['RELATED', 'ESTABLISHED'],
+      action  => 'accept',
+    } ->
+    firewall { '001 accept all icmp':
+      proto   => 'icmp',
+      action  => 'accept',
+    } ->
+    firewall { '001 accept all to lo interface':
+      proto   => 'all',
+      iniface => 'lo',
+      action  => 'accept',
+    } ->
     # The Foreman server should accept ssh connections for management.
     firewall { '22 accept - ssh':
       port   => '22',
       proto  => 'tcp',
       action => 'accept',
+      state  => 'NEW',
     } ->
     # The Foreman server needs to accept DNS requests on this port for tcp and udp when provisioning systems.
     firewall { '53 accept - dns tcp':
       port   => '53',
       proto  => 'tcp',
       action => 'accept',
+      state  => 'NEW',
     } ->
     firewall { '53 accept - dns udp':
       port   => '53',
       proto  => 'udp',
       action => 'accept',
+      state  => 'NEW',
     } ->
     # The Foreman server needs to accept DHCP requests on this port when provisioning systems.
     firewall { '67 accept - dhcp':
       port   => '67',
       proto  => 'udp',
       action => 'accept',
+      state  => 'NEW',
     } ->
     # The Foreman server needs to accept BOOTP requests on this port when provisioning systems.
     firewall { '68 accept - bootp':
       port   => '68',
       proto  => 'udp',
       action => 'accept',
+      state  => 'NEW',
     } ->
     # The Foreman server needs to accept TFTP requests on this port when provisioning systems.
     firewall { '69 accept - tftp':
       port   => '69',
       proto  => 'udp',
       action => 'accept',
+      state  => 'NEW',
     } ->
     # The Foreman web user interface accepts connections on these ports.
     firewall { '80 accept - apache':
       port   => '80',
       proto  => 'tcp',
       action => 'accept',
+      state  => 'NEW',
     } ->
     firewall { '443 accept - apache':
       port   => '443',
       proto  => 'tcp',
       action => 'accept',
+      state  => 'NEW',
     } ->
     # The Foreman server accepts connections to Puppet on this port.
     firewall { '8140 accept - puppetmaster':
       port   => '8140',
       proto  => 'tcp',
       action => 'accept',
-    }
+      state  => 'NEW',
+    } ->
     # The Foreman server accepts connections with managed systems on this port.
     firewall { '5671 accept - managed systems':
       port   => '5671',
       proto  => 'tcp',
       action => 'accept',
-    }
+      state  => 'NEW',
+    } ->
     # The Foreman server accepts connections to Tomcat on this port.
     firewall { '8080 accept - tomcat6':
       port   => '8080',
       proto  => 'tcp',
       action => 'accept',
-    }
+      state  => 'NEW',
+    } ->
     # The Foreman server accepts connections to Smart Proxy on this port.
     firewall { '9090 accept - smart proxy':
       port   => '9090',
       proto  => 'tcp',
       action => 'accept',
+      state  => 'NEW',
+    } ->
+    #Reject everything else
+    firewall { '998 reject all':
+      proto   => 'all',
+      action  => 'reject',
+    } ->
+    firewall { '999 reject all forward':
+      chain   => 'FORWARD',
+      proto   => 'all',
+      action  => 'reject',
     }
   }
 }
