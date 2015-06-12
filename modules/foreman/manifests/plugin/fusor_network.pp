@@ -149,6 +149,13 @@ class foreman::plugin::fusor_network(
       action => 'accept',
       state  => 'NEW',
     } ->
+    # The Capsule accepts connections for provisioning on this port.
+    firewall { '8000 accept - provisioning':
+      port   => '8000',
+      proto  => 'tcp',
+      action => 'accept',
+      state  => 'NEW',
+    } ->
     # The Foreman server accepts connections to Puppet on this port.
     firewall { '8140 accept - puppetmaster':
       port   => '8140',
@@ -166,6 +173,13 @@ class foreman::plugin::fusor_network(
     # The Foreman server accepts connections to Tomcat on this port.
     firewall { '8080 accept - tomcat6':
       port   => '8080',
+      proto  => 'tcp',
+      action => 'accept',
+      state  => 'NEW',
+    } ->
+    # The Capsule accepts connections to for subscription-manager on this port.
+    firewall { '8443 accept - subscription-manager':
+      port   => '8443',
       proto  => 'tcp',
       action => 'accept',
       state  => 'NEW',
