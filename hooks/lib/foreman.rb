@@ -127,7 +127,7 @@ class Foreman
         object = @api_resource.action(:create).call(identifiers.merge(attributes))
       rescue RestClient::UnprocessableEntity
         if retries > 0
-          sleep(retries)
+          sleep(30)
           object = create_with_retries(identifiers, attributes, retries-=1)
         end
       end
