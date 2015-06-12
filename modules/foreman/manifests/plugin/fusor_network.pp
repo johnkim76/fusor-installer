@@ -156,6 +156,13 @@ class foreman::plugin::fusor_network(
       action => 'accept',
       state  => 'NEW',
     } ->
+    # Candlepin listens on this port
+    firewall { '8009 accept - provisioning':
+      port   => '8009',
+      proto  => 'tcp',
+      action => 'accept',
+      state  => 'NEW',
+    } ->
     # The Foreman server accepts connections to Puppet on this port.
     firewall { '8140 accept - puppetmaster':
       port   => '8140',
@@ -163,9 +170,28 @@ class foreman::plugin::fusor_network(
       action => 'accept',
       state  => 'NEW',
     } ->
+    # qpid-dispatch-routerd
+    firewall { '5646 accept - managed systems':
+      port   => '5646',
+      proto  => 'tcp',
+      action => 'accept',
+      state  => 'NEW',
+    } ->
+    firewall { '5647 accept - managed systems':
+      port   => '5647',
+      proto  => 'tcp',
+      action => 'accept',
+      state  => 'NEW',
+    } ->
     # The Foreman server accepts connections with managed systems on this port.
     firewall { '5671 accept - managed systems':
       port   => '5671',
+      proto  => 'tcp',
+      action => 'accept',
+      state  => 'NEW',
+    } ->
+    firewall { '5672 accept - managed systems':
+      port   => '5672',
       proto  => 'tcp',
       action => 'accept',
       state  => 'NEW',
