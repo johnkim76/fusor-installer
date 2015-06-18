@@ -84,7 +84,7 @@ class Foreman
           object = @api_resource.action(:show).call(identifiers)
         end
       else
-        object = @api_resource.action(:create).call(identifiers.merge(attributes))
+        object = create_with_retries(identifiers, attributes, 10)
       end
       object
     end
@@ -120,6 +120,18 @@ class Foreman
 
     def should_update?(original, desired)
       desired.any? { |attribute, value| original[attribute] != value }
+    end
+
+    def create_with_retries(identifiers, attributes, retries)
+      begin
+        object = @api_resource.action(:create).call(identifiers.merge(attributes))
+      rescue RestClient::UnprocessableEntity
+        if retries > 0
+          sleep(30)
+          object = create_with_retries(identifiers, attributes, retries-=1)
+        end
+      end
+      object
     end
   end
 end
