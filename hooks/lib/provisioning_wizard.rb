@@ -45,7 +45,6 @@ class ProvisioningWizard < BaseWizard
   def start
     get_interface if @interface.nil? || !interfaces.has_key?(@interface)
     super
-    config_fqdn
   end
 
   def get_configure_networking
@@ -97,42 +96,59 @@ class ProvisioningWizard < BaseWizard
     @ntp_host ||= '1.centos.pool.ntp.org'
   end
 
-  def fqdn
+  def ip=(ip)
+    @ip=ip
+    config_fqdn
+    @ip
+  end 
+
+  def fqdn=(fqdn)
+    @fqdn=fqdn
     @fqdn ||= Facter.value :fqdn
-
-    unless "#{Facter.value :fqdn}" == "#{@fqdn}"
-      result = system("/usr/bin/hostname #{@fqdn} 2>&1 >/dev/null")
-      if $?.exitstatus > 0
-        say "<%= color('Warning: Could not set hostname: #{result}', :bad) %>"
-      end
-
-      #Once we set the hostname we need to reload facts
-      Facter.flush
-
-      if Facter.fqdn != nil
-        @base_url = "https://#{Facter.value :fqdn}"
-        @domain = Facter.value :domain
-      end 
-    end  
+    config_fqdn    
+    if Facter.fqdn != nil
+      @base_url = "https://#{Facter.value :fqdn}"
+      @domain = Facter.value :domain
+    end 
     Facter.value :fqdn
   end
 
   def config_fqdn
+    Facter.flush
+
+    if @ip != nil && @fqdn != nil 
       begin
-        hosts = File.read('/etc/hosts')
-        hosts.gsub!(/^#{Regexp.escape(ip)}\s.*?$\n/, '')
-        hosts.chop!
-        hosts += "\n#{ip} #{@fqdn} #{Facter.hostname}\n"
-        File.open('/etc/hosts', "w") { |file| file.write(hosts) }
-      rescue => error
-        say "<%= color('Warning: Could not write host entry to /etc/hosts: #{error}', :bad) %>"
+        resolvedaddress = Resolv.getaddress(@fqdn)
+      rescue
+        resolvedaddress = nil
       end
 
-      begin
-        File.write('/etc/hostname', "#{@fqdn}")
-      rescue  => error
-        say "<%= color('Warning: Could not write hostname to /etc/hostname: #{error}', :bad) %>"
+      if resolvedaddress != @ip || "#{Facter.value :fqdn}" != "#{@fqdn}"
+        result = system("/usr/bin/hostname #{@fqdn} 2>&1 >/dev/null")
+        if $?.exitstatus > 0
+          say "<%= color('Warning: Could not set hostname: #{result}', :bad) %>"
+        end
+
+        begin
+          hosts = File.read('/etc/hosts')
+          hosts.gsub!(/^#{Regexp.escape(@ip)}\s.*?$\n/, '')
+          hosts.gsub!(/^.*?\s#{Regexp.escape(@fqdn)}\s.*?$\n/, '')
+          hosts.chop!
+          hosts += "\n#{@ip} #{@fqdn} #{Facter.hostname}\n"
+          File.open('/etc/hosts', "w") { |file| file.write(hosts) }
+        rescue => error
+          say "<%= color('Warning: Could not write host entry to /etc/hosts: #{error}', :bad) %>"
+        end
+        begin
+          File.write('/etc/hostname', "#{@fqdn}")
+        rescue  => error
+          say "<%= color('Warning: Could not write hostname to /etc/hostname: #{error}', :bad) %>"
+        end
+        
+        Facter.flush
+        say "<%= color('Hostname configuration updated!', :good) %>"
       end
+    end
   end
 
   def timezone
