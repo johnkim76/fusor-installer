@@ -48,11 +48,6 @@ class foreman::plugin::fusor_network(
       peerdns   => true,
     }
 
-    host { $fqdn:
-      comment      => 'created by puppet class foreman::plugin::fusor_network',
-      ip           => $ip,
-      host_aliases => $hostname
-    }
   }
 
   if ($configure_firewall) {

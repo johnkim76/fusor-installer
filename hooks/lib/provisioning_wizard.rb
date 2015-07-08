@@ -5,6 +5,7 @@ class ProvisioningWizard < BaseWizard
     {
         :interface => 'Network interface',
         :ip => 'IP address',
+        :fqdn => 'Hostname',
         :netmask => 'Network mask',
         :network => 'Network address',
         :own_gateway => 'Host Gateway',
@@ -22,7 +23,7 @@ class ProvisioningWizard < BaseWizard
   end
 
   def self.order
-    %w(interface ip netmask network own_gateway from to gateway dns domain base_url ntp_host timezone configure_networking configure_firewall)
+    %w(interface ip fqdn netmask network own_gateway from to gateway dns domain base_url ntp_host timezone configure_networking configure_firewall)
   end
 
   def self.custom_labels
@@ -44,6 +45,7 @@ class ProvisioningWizard < BaseWizard
   def start
     get_interface if @interface.nil? || !interfaces.has_key?(@interface)
     super
+    config_fqdn
   end
 
   def get_configure_networking
@@ -95,6 +97,44 @@ class ProvisioningWizard < BaseWizard
     @ntp_host ||= '1.centos.pool.ntp.org'
   end
 
+  def fqdn
+    @fqdn ||= Facter.value :fqdn
+
+    unless "#{Facter.value :fqdn}" == "#{@fqdn}"
+      result = system("/usr/bin/hostname #{@fqdn} 2>&1 >/dev/null")
+      if $?.exitstatus > 0
+        say "<%= color('Warning: Could not set hostname: #{result}', :bad) %>"
+      end
+
+      #Once we set the hostname we need to reload facts
+      Facter.flush
+
+      if Facter.fqdn != nil
+        @base_url = "https://#{Facter.value :fqdn}"
+        @domain = Facter.value :domain
+      end 
+    end  
+    Facter.value :fqdn
+  end
+
+  def config_fqdn
+      begin
+        hosts = File.read('/etc/hosts')
+        hosts.gsub!(/^#{Regexp.escape(ip)}\s.*?$\n/, '')
+        hosts.chop!
+        hosts += "\n#{ip} #{@fqdn} #{Facter.hostname}\n"
+        File.open('/etc/hosts', "w") { |file| file.write(hosts) }
+      rescue => error
+        say "<%= color('Warning: Could not write host entry to /etc/hosts: #{error}', :bad) %>"
+      end
+
+      begin
+        File.write('/etc/hostname', "#{@fqdn}")
+      rescue  => error
+        say "<%= color('Warning: Could not write hostname to /etc/hostname: #{error}', :bad) %>"
+      end
+  end
+
   def timezone
     @timezone ||= current_system_timezone
   end
@@ -133,6 +173,17 @@ class ProvisioningWizard < BaseWizard
 
   def validate_dns
     'DNS forwarder is invalid' unless valid_ip?(@dns)
+  end
+
+  def validate_fqdn
+    'Hostname must be present' if @hostname.nil? || @hostname.empty?
+    if @fqdn =~ /[A-Z]/
+      'Invalid hostname. Uppercase characters are not supported.'
+    elsif @fqdn !~ /\./
+      'Invalid hostname. Must include at least one dot.'
+    elsif @fqdn !~ /^(?=.{1,255}$)[0-9a-z](?:(?:[0-9a-z]|-){0,61}[0-9a-z])?(?:\.[0-9a-z](?:(?:[0-9a-z]|-){0,61}[0-9a-z])?)*\.?$/
+      'Invalid hostname.'
+    end
   end
 
   def validate_domain

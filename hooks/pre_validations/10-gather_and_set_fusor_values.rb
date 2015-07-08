@@ -29,6 +29,7 @@ if app_value(:provisioning_wizard) != 'none'
     end
   end
 
+  param('capsule', 'parent_fqdn').value = provisioning_wizard.fqdn
   param('capsule', 'tftp_servername').value = provisioning_wizard.ip
   param('capsule', 'dhcp_interface').value = provisioning_wizard.interface
   param('capsule', 'dhcp_gateway').value = provisioning_wizard.gateway
@@ -37,8 +38,14 @@ if app_value(:provisioning_wizard) != 'none'
   param('capsule', 'dns_interface').value = provisioning_wizard.interface
   param('capsule', 'dns_zone').value = provisioning_wizard.domain
   param('capsule', 'dns_reverse').value = provisioning_wizard.ip.split('.')[0..2].reverse.join('.') + '.in-addr.arpa'
+  param('capsule', 'dns_tsig_principal').value = "foremanproxy/#{provisioning_wizard.fqdn}@#{provisioning_wizard.domain.upcase}"
+  param('capsule', 'realm_principal').value = "realm-proxy@#{provisioning_wizard.domain.upcase}"
   param('capsule', 'dns_forwarders').value = provisioning_wizard.dns
-
+  param('capsule', 'qpid_router_broker_addr').value = provisioning_wizard.fqdn
+  param('certs', 'node_fqdn').value = provisioning_wizard.fqdn
+  param('certs', 'ca_common_name').value = provisioning_wizard.fqdn
+  param('foreman', 'servername').value = provisioning_wizard.fqdn
+  param('foreman', 'foreman_url').value = provisioning_wizard.base_url
   param('foreman_plugin_fusor', 'configure_networking').value = provisioning_wizard.configure_networking
   param('foreman_plugin_fusor', 'configure_firewall').value = provisioning_wizard.configure_firewall
   param('foreman_plugin_fusor', 'interface').value = provisioning_wizard.interface
