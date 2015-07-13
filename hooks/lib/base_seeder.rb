@@ -16,7 +16,7 @@ class BaseSeeder
   end
 
   def foreman
-    @foreman ||= Foreman.new(ApipieBindings::API.new(:uri => @foreman_url, :username => @username, :password => @password, :api_version => 2))
+    @foreman ||= Foreman.new(ApipieBindings::API.new(:uri => @foreman_url, :username => @username, :password => @password, :api_version => 2, :timeout => 120))
   end
 
   private
