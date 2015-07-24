@@ -51,6 +51,14 @@ Kafo::KafoConfigure.hooking.register_pre(:reset_db) do
   end
 end
 
+# if --reset, clear puppet environments, else we hit errors when populating
+# fusor data
+Kafo::KafoConfigure.hooking.register_pre_commit(:fusor_reset) do
+  if kafo.config.app[:reset] && !kafo.config.app[:noop]
+    kafo.config.app[:clear_puppet_environments] = true
+  end
+end
+
 # Run the install
 @result = Kafo::KafoConfigure.run
 exit 0 if @result.nil? # --help invocation
