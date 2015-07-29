@@ -170,7 +170,6 @@ class ProvisioningSeeder < BaseSeeder
                        'subnet_id' => default_subnet['id']}
     default_hostgroup = @foreman.hostgroups.show_or_ensure({'id' => "Fusor Base"}, hostgroup_attrs)
 
-    setup_setting(default_hostgroup)
     setup_idle_timeout
     setup_default_root_pass
     setup_ignore_puppet_facts_for_provisioning
@@ -225,14 +224,6 @@ class ProvisioningSeeder < BaseSeeder
                                               'hostgroup_ids' => (hostgroup_ids + objects['hostgroups'].map{ |h| h['id'] }).uniq,
                                               'environment_ids' => (environment_ids + [objects['environments'].map{ |e| e['id'] }]).flatten.uniq,
                                               'medium_ids' => (medium_ids + [objects['media'].map{ |m| m['id'] }]).uniq })
-  end
-
-  def setup_setting(default_hostgroup)
-    @foreman.settings.show_or_ensure({'id' => 'base_hostgroup'},
-                                     {'value' => default_hostgroup['name'].to_s})
-  rescue NoMethodError => e
-    @logger.error "Setting with name 'base_hostgroup' not found, you must run 'foreman-rake db:seed' " +
-                      "and rerun installer to fix this issue."
   end
 
   def setup_idle_timeout
