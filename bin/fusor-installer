@@ -53,7 +53,7 @@ end
 
 # if --reset, clear puppet environments, else we hit errors when populating
 # fusor data
-Kafo::KafoConfigure.hooking.register_pre_commit(:fusor_reset) do
+Kafo::KafoConfigure.hooking.register_pre_validations(:fusor_reset) do
   if kafo.config.app[:reset] && !kafo.config.app[:noop]
     kafo.config.app[:clear_puppet_environments] = true
   end
