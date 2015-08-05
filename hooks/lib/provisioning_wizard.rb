@@ -17,13 +17,15 @@ class ProvisioningWizard < BaseWizard
         :base_url => 'Foreman URL',
         :ntp_host => 'NTP sync host',
         :timezone => 'Timezone',
+        :bmc => 'BMC feature enabled',
+        :bmc_default_provider => 'BMC default provider',
         :configure_networking => 'Configure networking on this machine',
         :configure_firewall => 'Configure firewall on this machine'
     }
   end
 
   def self.order
-    %w(interface ip fqdn netmask network own_gateway from to gateway dns domain base_url ntp_host timezone configure_networking configure_firewall)
+    %w(interface ip fqdn netmask network own_gateway from to gateway dns domain base_url ntp_host timezone bmc bmc_default_provider configure_networking configure_firewall)
   end
 
   def self.custom_labels
@@ -35,11 +37,14 @@ class ProvisioningWizard < BaseWizard
 
   attr_accessor *attrs.keys
 
-  def initialize(*args)
+  def initialize(kafo)
     super
     self.header = 'Networking setup:'
     self.help = "The installer can configure the networking and firewall rules on this machine with the configuration shown below. Default values are populated from the this machine's existing networking configuration.\n\nIf you DO NOT want to configure networking please set 'Configure networking on this machine' to No before proceeding. Do this by selecting option 'Do not configure networking' from the list below."
     self.allow_cancellation = true
+
+    @bmc = kafo.param('capsule', 'bmc').value
+    @bmc_default_provider = kafo.param('capsule', 'bmc_default_provider').value
   end
 
   def start
@@ -216,6 +221,18 @@ class ProvisioningWizard < BaseWizard
 
   def validate_timezone
     'Timezone is not a valid IANA timezone identifier' unless valid_timezone?(@timezone)
+  end
+
+  def validate_bmc
+    unless ['true', 'false', true, false].include?(@bmc)
+      'BMC feature enabled is invalid. Please enter true or false.'
+    end
+  end
+
+  def validate_bmc_default_provider
+    unless ['ipmitool', 'freeipmi'].include?(@bmc_default_provider)
+      'BMC default provider is invalid. Please enter ipmitool or freeipmi.'
+    end
   end
 
   private

@@ -56,6 +56,7 @@ cp config/fusor-installer.answers.yaml %{buildroot}%{_sysconfdir}/katello-instal
 %{_datadir}/katello-installer/hooks/boot/05-remove_hostname_check.rb
 %{_datadir}/katello-installer/hooks/boot/10-add_options.rb
 %{_datadir}/katello-installer/hooks/lib/base_seeder.rb
+%{_datadir}/katello-installer/hooks/lib/host_seeder.rb
 %{_datadir}/katello-installer/hooks/lib/foreman.rb
 %attr(755, root, root) %{_datadir}/katello-installer/hooks/lib/install_modules.sh
 %{_datadir}/katello-installer/hooks/lib/base_wizard.rb
