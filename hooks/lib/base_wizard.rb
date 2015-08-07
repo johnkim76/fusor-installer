@@ -97,10 +97,10 @@ class BaseWizard
   def get_ready
     choose do |menu|
       say "\n#{self.help}"
-      menu.header = HighLine.color("\nHow would you like to proceed?", :important)
+      menu.header = "\nHow would you like to proceed?"
       menu.prompt = ''
       menu.select_by = :index
-      menu.choice(HighLine.color('Proceed with the values shown', :run)) { false }
+      menu.choice('Proceed with the values shown') { false }
       self.class.order.each do |attr|
         name = self.class.attrs[attr.to_sym]
         value = kafo_param(attr).is_a?(Kafo::Params::Password) && @hide_password ? '*' * send(attr).size : send(attr)
