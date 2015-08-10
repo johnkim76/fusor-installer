@@ -100,7 +100,7 @@ class BaseWizard
       menu.header = "\nHow would you like to proceed?"
       menu.prompt = ''
       menu.select_by = :index
-      menu.choice('Proceed with the values shown') { false }
+      menu.choice(HighLine.color('Proceed with the values shown', :run)) { false }
       self.class.order.each do |attr|
         name = self.class.attrs[attr.to_sym]
         value = kafo_param(attr).is_a?(Kafo::Params::Password) && @hide_password ? '*' * send(attr).size : send(attr)
