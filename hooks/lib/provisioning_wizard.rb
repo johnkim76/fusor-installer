@@ -98,7 +98,7 @@ class ProvisioningWizard < BaseWizard
   end
 
   def ntp_host
-    @ntp_host ||= '1.centos.pool.ntp.org'
+    @ntp_host ||= '0.rhel.pool.ntp.org'
   end
 
   def ip=(ip)
