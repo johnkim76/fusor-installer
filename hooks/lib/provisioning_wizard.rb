@@ -82,7 +82,7 @@ class ProvisioningWizard < BaseWizard
   end
 
   def own_gateway
-    @own_gateway ||= `ip route | awk '/default/{print $3}'`.chomp
+    @gateway = @ip.to_s.chomp(@ip.to_s.split('.')[-1]).concat("1")
   end
 
   def gateway
@@ -301,7 +301,9 @@ class ProvisioningWizard < BaseWizard
   end
 
   def valid_ip?(ip)
-    !!(ip =~ Resolv::IPv4::Regex)
+    (!!(ip =~ Resolv::IPv4::Regex)) || 
+    (!!(ip =~ Resolv::IPv6::Regex)) ||
+    (ip =~ /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/) 
   end
 
   # NOTE(jistr): currently we only have tzinfo for ruby193 scl and
