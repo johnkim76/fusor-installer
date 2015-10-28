@@ -173,7 +173,7 @@ class ProvisioningWizard < BaseWizard
   end
 
   def validate_netmask
-    'Network mask - Invalid IP address' unless valid_ip?(@netmask)
+    'Network mask is Invalid' unless valid_ip?(@netmask)
   end
 
   def validate_network
