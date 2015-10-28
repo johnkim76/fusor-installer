@@ -161,43 +161,75 @@ class ProvisioningWizard < BaseWizard
   end
 
   def validate_interface
-    'Interface must be present' if @interface.nil? || @interface.empty?
+    'Interface must be specified' if @interface.nil? || @interface.empty?
   end
 
   def validate_ip
-    'IP address is invalid' unless valid_ip?(@ip)
+    if !(valid_ip?(@ip))
+      'IP address is invalid' 
+    elsif (IPAddr.new(from)..IPAddr.new(to))===IPAddr.new(ip)
+      'DHCP range is Invalid - DHCP range includes the provisioning host IP address'
+    end
   end
 
   def validate_netmask
-    'Network mask is invalid' unless valid_ip?(@netmask)
+    'Network mask is Invalid' unless valid_ip?(@netmask)
   end
 
   def validate_network
-    'Network address is invalid' unless valid_ip?(@network)
+    if !(valid_ip?(@network))
+      'Network address - Invalid IP address' 
+    elsif (IPAddr.new(from)..IPAddr.new(to))===IPAddr.new(network)
+      'DHCP range is Invalid - DHCP range includes the Network address IP address'
+    end
   end
 
   def validate_own_gateway
-    'Host Gateway is invalid' unless valid_ip?(@own_gateway)
+    if !(valid_ip?(@own_gateway))
+      'Host Gateway - Invalid IP address' 
+    elsif (IPAddr.new(from)..IPAddr.new(to))===IPAddr.new(own_gateway)
+      'DHCP range is Invalid - DHCP range includes the Host Gateway IP address'
+    end
   end
 
   def validate_from
-    'DHCP range start is invalid' unless valid_ip?(@from)
+    if !(valid_ip?(@ip))
+      # No need to repeat the Invalid IP message here
+    elsif !(valid_ip?(@from))
+      'DHCP range start - Invalid IP address'
+    elsif IPAddr.new(from).to_i > IPAddr.new(to).to_i
+      'DHCP range start is Invalid - DHCP range start is greater than DHCP range end'
+    end
   end
 
   def validate_to
-    'DHCP range end is invalid' unless valid_ip?(@to)
+    if !(valid_ip?(@ip))
+      # No need to repeat the Invalid IP message here
+    elsif !(valid_ip?(@to))
+      'DHCP range end - Invalid IP address'
+    elsif IPAddr.new(to).to_i < (IPAddr.new(from).to_i)+1
+      'DHCP range end is Invalid - Minimum range of 2 needed from DHCP range start'
+    end  
   end
 
   def validate_gateway
-    'DHCP Gateway is invalid' unless valid_ip?(@gateway)
+    if !(valid_ip?(@gateway))
+      'DHCP Gateway - Invalid IP address' 
+    elsif (IPAddr.new(from)..IPAddr.new(to))===IPAddr.new(gateway)
+      'DHCP range is Invalid - DHCP range includes the DHCP Gateway IP address'  
+    end
   end
 
   def validate_dns
-    'DNS forwarder is invalid' unless valid_ip?(@dns)
+    if !(valid_ip?(@dns))
+      'DNS forwarder - Invalid IP address' 
+    elsif (IPAddr.new(from)..IPAddr.new(to))===IPAddr.new(dns)
+      'DHCP range is Invalid - DHCP range includes the DNS forwarder IP address'
+    end
   end
 
   def validate_fqdn
-    'Hostname must be present' if @hostname.nil? || @hostname.empty?
+    'Hostname must be specified' if @hostname.nil? || @hostname.empty?
     if @fqdn =~ /[A-Z]/
       'Invalid hostname. Uppercase characters are not supported.'
     elsif @fqdn !~ /\./
@@ -208,15 +240,19 @@ class ProvisioningWizard < BaseWizard
   end
 
   def validate_domain
-    'Domain must be present' if @domain.nil? || @domain.empty?
+    'Domain must be specified' if @domain.nil? || @domain.empty?
   end
 
   def validate_base_url
-    'Foreman URL must be present' if @base_url.nil? || @base_url.empty?
+    'Foreman URL must be specified' if @base_url.nil? || @base_url.empty?
   end
 
   def validate_ntp_host
-    'NTP sync host' if @ntp_host.nil? || @ntp_host.empty?
+    if @ntp_host.nil? || @ntp_host.empty? 
+      'NTP sync host must be specified' 
+    elsif !system("ntpdate -q #{ntp_host} &> /dev/null")  
+      'NTP sync host could not be used'
+    end
   end
 
   def validate_timezone
@@ -301,7 +337,9 @@ class ProvisioningWizard < BaseWizard
   end
 
   def valid_ip?(ip)
-    !!(ip =~ Resolv::IPv4::Regex)
+    (!!(ip =~ Resolv::IPv4::Regex)) || 
+    (!!(ip =~ Resolv::IPv6::Regex)) ||
+    (ip =~ /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/) 
   end
 
   # NOTE(jistr): currently we only have tzinfo for ruby193 scl and
