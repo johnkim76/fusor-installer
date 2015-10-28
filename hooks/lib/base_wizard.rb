@@ -100,12 +100,20 @@ class BaseWizard
       menu.header = "\nHow would you like to proceed?"
       menu.prompt = ''
       menu.select_by = :index
-      menu.choice(HighLine.color('Proceed with the values shown', :run)) { false }
+      adjustment  = 32 
+      count = 1
+      menu.choice(HighLine.color("Proceed with the values shown".rjust(adjustment+1), :run)) { false }
       self.class.order.each do |attr|
+        count += 1
         name = self.class.attrs[attr.to_sym]
         value = kafo_param(attr).is_a?(Kafo::Params::Password) && @hide_password ? '*' * send(attr).size : send(attr)
-        
-        label = self.class.custom_labels[attr.to_sym] || "Change #{name}".rjust(27) + "   #{value}" 
+        name_label  = "Change #{name}"
+        value_label = " | #{value}" 
+        if (count < 10) && (menu.index.eql? :number)
+          label = self.class.custom_labels[attr.to_sym] || name_label.rjust(adjustment+1) + value_label 
+        else
+          label = self.class.custom_labels[attr.to_sym] || name_label.rjust(adjustment) + value_label
+        end
         label = "Do not " + label.downcase if send(attr).is_a?(TrueClass)
         label = label
         menu.choice(label) { attr.to_sym }
