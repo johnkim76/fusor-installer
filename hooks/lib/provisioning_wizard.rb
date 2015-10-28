@@ -82,7 +82,7 @@ class ProvisioningWizard < BaseWizard
   end
 
   def own_gateway
-    @gateway = @ip.to_s.chomp(@ip.to_s.split('.')[-1]).concat("1")
+    @own_gateway ||= `ip route | awk '/default/{print $3}'`.chomp
   end
 
   def gateway
