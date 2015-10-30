@@ -1,93 +1,93 @@
---- 
-  :log_dir: /var/log/katello-installer
-  :log_name: katello-installer.log
-  :log_level: :debug
-  :no_prefix: false
-  :mapping: 
-    :"katello::plugin::gutterball": 
-      :dir_name: katello
-      :manifest_name: plugin/gutterball
-    :"foreman::plugin::bootdisk": 
-      :dir_name: foreman
-      :manifest_name: plugin/bootdisk
-    :"foreman::plugin::puppetdb": 
-      :dir_name: foreman
-      :manifest_name: plugin/puppetdb
-    :"foreman::plugin::hooks": 
-      :dir_name: foreman
-      :manifest_name: plugin/hooks
-    :"foreman::plugin::discovery": 
-      :dir_name: foreman
-      :manifest_name: plugin/discovery
-      :params_name: plugin/discovery/params
-    :"foreman::plugin::chef": 
-      :dir_name: foreman
-      :manifest_name: plugin/chef
-    :"foreman::plugin::tasks": 
-      :dir_name: foreman
-      :manifest_name: plugin/tasks
-    :"foreman::plugin::templates": 
-      :dir_name: foreman
-      :manifest_name: plugin/templates
-    :"foreman::plugin::setup": 
-      :dir_name: foreman
-      :manifest_name: plugin/setup
-    :"foreman::plugin::default_hostgroup": 
-      :dir_name: foreman
-      :manifest_name: plugin/default_hostgroup
-    :"foreman::compute::rackspace": 
-      :dir_name: foreman
-      :manifest_name: compute/rackspace
-    :"foreman::compute::openstack": 
-      :dir_name: foreman
-      :manifest_name: compute/openstack
-    :"foreman::compute::vmware": 
-      :dir_name: foreman
-      :manifest_name: compute/vmware
-    :"foreman::compute::libvirt": 
-      :dir_name: foreman
-      :manifest_name: compute/libvirt
-    :"foreman::compute::ec2": 
-      :dir_name: foreman
-      :manifest_name: compute/ec2
-    :"foreman::compute::gce": 
-      :dir_name: foreman
-      :manifest_name: compute/gce
-    :"foreman::compute::ovirt": 
-      :dir_name: foreman
-      :manifest_name: compute/ovirt
-    "foreman::plugin::fusor": 
-      :manifest_name: plugin/fusor
-      :dir_name: foreman
-  :answer_file: /etc/katello-installer/fusor-installer.answers.yaml
-  :installer_dir: /usr/share/katello-installer
-  :modules_dir: /usr/share/katello-installer/modules
-  :default_values_dir: /tmp
-  :colors: true
-  :color_of_background: :dark
-  :hook_dirs: []
-  :custom: {}
-  :low_priority_modules: []
-  :provisioning_wizard: interactive
-  :name: Foreman
-  :order: 
-    - certs
-    - foreman
-    - katello
-    - capsule
-  :password: dYbVcEXVs6H7K8dnqk87f4O5mGWam1CdAN5l27v3kZQ
-  :reset_foreman_db: false
-  :reset: false
-  :clear_pulp_content: false
-  :clear_puppet_environments: false
-  :certs_update_server: false
-  :certs_update_server_ca: false
-  :certs_update_all: false
-  :certs_skip_check: false
-  :upgrade: false
-  :dont_save_answers: false
-  :ignore_undocumented: false
-  :interactive: 
-  :noop: false
-  :verbose: 
-  :verbose_log_level: info
+# fusor-installer main configuration file, based upon katello-installer
+# note current configuration is written to foreman-installer.yaml every time foreman-install is run
+
+## Installer configuration
+# Path to answer file
+:answer_file: /etc/katello-installer/fusor-installer.answers.yaml
+# Uncomment if you want to load puppet modules from a specific path, $pwd/modules is used by default
+:modules_dir: /usr/share/katello-installer/modules
+:provisioning_wizard: 'interactive'
+:installer_dir: /usr/share/katello-installer
+
+
+## Useful for development, e.g. when you want to move log files to local directory
+:log_dir: '/var/log/katello-installer'
+:log_name: 'katello-installer.log'
+:log_level: :debug
+
+# Change if you want to debug default answers for you modules, this directory holds default answers
+# :default_values_dir: /tmp
+
+## Advanced configuration - if not set it's ignored
+# :log_owner: root
+# :log_group: root
+# :config_header_file:
+# :dont_save_answers:
+
+# If using the Debian ruby-kafo package, uncomment this
+# :kafo_modules_dir: /usr/lib/ruby/vendor_ruby/kafo/modules
+
+## Kafo tuning, customization of core functionality
+:name: Foreman
+# :no_prefix: false
+:order:
+  - certs
+  - foreman
+  - katello
+  - capsule
+
+# The mapping hash provides Kafo with the information to find plugin classes
+:mapping:
+  :katello::plugin::gutterball:
+    :dir_name: katello
+    :manifest_name: plugin/gutterball
+  :foreman::plugin::bootdisk:
+    :dir_name: foreman
+    :manifest_name: plugin/bootdisk
+  :foreman::plugin::puppetdb:
+    :dir_name: foreman
+    :manifest_name: plugin/puppetdb
+  :foreman::plugin::hooks:
+    :dir_name: foreman
+    :manifest_name: plugin/hooks
+  :foreman::plugin::discovery:
+    :dir_name: foreman
+    :manifest_name: plugin/discovery
+    :params_name: plugin/discovery/params
+  :foreman::plugin::chef:
+    :dir_name: foreman
+    :manifest_name: plugin/chef
+  :foreman::plugin::tasks:
+    :dir_name: foreman
+    :manifest_name: plugin/tasks
+  :foreman::plugin::templates:
+    :dir_name: foreman
+    :manifest_name: plugin/templates
+  :foreman::plugin::setup:
+    :dir_name: foreman
+    :manifest_name: plugin/setup
+  :foreman::plugin::default_hostgroup:
+    :dir_name: foreman
+    :manifest_name: plugin/default_hostgroup
+  :foreman::compute::rackspace:
+    :dir_name: foreman
+    :manifest_name: compute/rackspace
+  :foreman::compute::openstack:
+    :dir_name: foreman
+    :manifest_name: compute/openstack
+  :foreman::compute::vmware:
+    :dir_name: foreman
+    :manifest_name: compute/vmware
+  :foreman::compute::libvirt:
+    :dir_name: foreman
+    :manifest_name: compute/libvirt
+  :foreman::compute::ec2:
+    :dir_name: foreman
+    :manifest_name: compute/ec2
+  :foreman::compute::gce:
+    :dir_name: foreman
+    :manifest_name: compute/gce
+  :foreman::compute::ovirt:
+    :dir_name: foreman
+    :manifest_name: compute/ovirt
+
