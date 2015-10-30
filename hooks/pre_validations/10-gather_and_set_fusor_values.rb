@@ -27,6 +27,13 @@ if app_value(:provisioning_wizard) != 'none'
       say "<%= color('Networking setup failed', :bad) %>"
       kafo.class.exit(101)
     end
+
+    if !system("ntpdate -q #{provisioning_wizard.ntp_host} &> /dev/null")  
+      say HighLine.color('ERROR - NTP sync host could not be used', :bad)
+      kafo.class.exit(101)
+    else
+      say HighLine.color('NTP sync host is ok', :good)
+    end
   end
 
   param('capsule', 'parent_fqdn').value = provisioning_wizard.fqdn
