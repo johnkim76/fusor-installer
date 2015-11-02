@@ -165,7 +165,7 @@ class ProvisioningWizard < BaseWizard
   end
 
   def validate_ip
-    if !(valid_ip?(@ip))
+    if !((valid_ipv4?(@ip)) || (valid_ipv6?(@ip)))
       'IP address is invalid' 
     elsif (IPAddr.new(from)..IPAddr.new(to))===IPAddr.new(ip)
       'DHCP range is Invalid - DHCP range includes the provisioning host IP address'
@@ -173,11 +173,11 @@ class ProvisioningWizard < BaseWizard
   end
 
   def validate_netmask
-    'Network mask is Invalid' unless valid_ip?(@netmask)
+    'Network mask is Invalid' unless (valid_ipv4?(@netmask) || valid_ipv6?(@netmask))
   end
 
   def validate_network
-    if !(valid_ip?(@network))
+    if !((valid_ipv4?(@network)) || (valid_ipv6?(@network)))
       'Network address - Invalid IP address' 
     elsif (IPAddr.new(from)..IPAddr.new(to))===IPAddr.new(network)
       'DHCP range is Invalid - DHCP range includes the Network address IP address'
@@ -185,17 +185,17 @@ class ProvisioningWizard < BaseWizard
   end
 
   def validate_own_gateway
-    if !(valid_ip?(@own_gateway))
-      'Host Gateway - Invalid IP address' 
+    if !((valid_ipv4?(@own_gateway)) || (valid_ipv6?(@own_gateway)))
+      'Host Gateway - Invalid IP address (Enter a valid IP address)' 
     elsif (IPAddr.new(from)..IPAddr.new(to))===IPAddr.new(own_gateway)
       'DHCP range is Invalid - DHCP range includes the Host Gateway IP address'
     end
   end
 
   def validate_from
-    if !(valid_ip?(@ip))
+    if !((valid_ipv4?(@ip)) || (valid_ipv6?(@ip)))
       # No need to repeat the Invalid IP message here
-    elsif !(valid_ip?(@from))
+    elsif !((valid_ipv4?(@from)) || (valid_ipv6?(@from)))
       'DHCP range start - Invalid IP address'
     elsif IPAddr.new(from).to_i > IPAddr.new(to).to_i
       'DHCP range start is Invalid - DHCP range start is greater than DHCP range end'
@@ -203,26 +203,26 @@ class ProvisioningWizard < BaseWizard
   end
 
   def validate_to
-    if !(valid_ip?(@ip))
+    if !((valid_ipv4?(@ip)) || (valid_ipv6?(@ip)))
       # No need to repeat the Invalid IP message here
-    elsif !(valid_ip?(@to))
-      'DHCP range end - Invalid IP address'
+    elsif !((valid_ipv4?(@to)) || (valid_ipv6?(@to)))
+      'DHCP range end - Invalid IP address (Enter a valid IP address)'
     elsif IPAddr.new(to).to_i < (IPAddr.new(from).to_i)+1
       'DHCP range end is Invalid - Minimum range of 2 needed from DHCP range start'
     end  
   end
 
   def validate_gateway
-    if !(valid_ip?(@gateway))
-      'DHCP Gateway - Invalid IP address' 
+    if !((valid_ipv4?(@gateway)) || (valid_ipv6?(@gateway)))
+      'DHCP Gateway - Invalid IP address (Enter a valid IP address)' 
     elsif (IPAddr.new(from)..IPAddr.new(to))===IPAddr.new(gateway)
       'DHCP range is Invalid - DHCP range includes the DHCP Gateway IP address'  
     end
   end
 
   def validate_dns
-    if !(valid_ip?(@dns))
-      'DNS forwarder - Invalid IP address' 
+    if !((valid_ipv4?(@dns)) || (valid_ipv6?(@dns)))
+      'DNS forwarder - Invalid IP address (Enter a valid IP address)' 
     elsif (IPAddr.new(from)..IPAddr.new(to))===IPAddr.new(dns)
       'DHCP range is Invalid - DHCP range includes the DNS forwarder IP address'
     end
@@ -250,8 +250,6 @@ class ProvisioningWizard < BaseWizard
   def validate_ntp_host
     if @ntp_host.nil? || @ntp_host.empty? 
       'NTP sync host must be specified' 
-    elsif !(valid_ip?(@ntp_host))
-      'NTP sync host - Invalid IP address'
     end
   end
 
@@ -336,9 +334,15 @@ class ProvisioningWizard < BaseWizard
     facter_name
   end
 
-  def valid_ip?(ip)
-    (!!(ip =~ Resolv::IPv4::Regex)) || 
-    (!!(ip =~ Resolv::IPv6::Regex)) ||
+  def valid_ipv4?(ip)
+    (!!(ip =~ Resolv::IPv4::Regex)) 
+  end
+
+  def valid_ipv6?(ip)
+    (!!(ip =~ Resolv::IPv6::Regex)) 
+  end
+
+  def valid_hostname?(ip)
     (ip =~ /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/) 
   end
 
