@@ -46,8 +46,6 @@ if app_value(:provisioning_wizard) != 'none'
   param('capsule', 'bmc_default_provider').value = provisioning_wizard.bmc_default_provider
   param('certs', 'node_fqdn').value = provisioning_wizard.fqdn
   param('certs', 'ca_common_name').value = provisioning_wizard.fqdn
-  param('foreman', 'servername').value = provisioning_wizard.fqdn
-  param('foreman', 'foreman_url').value = provisioning_wizard.base_url
   param('foreman_plugin_fusor', 'configure_networking').value = provisioning_wizard.configure_networking
   param('foreman_plugin_fusor', 'configure_firewall').value = provisioning_wizard.configure_firewall
   param('foreman_plugin_fusor', 'interface').value = provisioning_wizard.interface
@@ -69,7 +67,12 @@ if app_value(:provisioning_wizard) != 'none'
   param('capsule', 'dhcp').value = true
   param('capsule', 'dns').value = true
 #  param('capsule', 'repo').value = 'nightly'
-  param('foreman', 'repo').value = 'nightly'
+
+  unless app_value(:devel_env)
+    param('foreman', 'servername').value = provisioning_wizard.fqdn
+    param('foreman', 'foreman_url').value = provisioning_wizard.base_url
+    param('foreman', 'repo').value = 'nightly'
+  end
 
 #  param('puppet', 'server').value = true
 end

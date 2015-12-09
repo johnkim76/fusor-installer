@@ -1,12 +1,60 @@
 require 'facter'
 
+DEVEL_ENV= app_value(:devel_env)
+if DEVEL_ENV
+  USER = param("katello_devel", "user").value
+  DEPLOYMENT_DIR = param("katello_devel", "deployment_dir").value
+  RVM_RUBY = param("katello_devel", "rvm_ruby").value
+end
+
+def rails_pid
+  pid_file = File.join(DEPLOYMENT_DIR, "foreman", "tmp", "pids", "server.pid")
+
+  if File.exists?(pid_file)
+    File.open(pid_file) { |f| f.read }
+  else
+    nil
+  end
+end
+
+def rails_running?
+  return false unless (pid = rails_pid)
+  Process.getpgid(pid.to_i)
+rescue Errno::ESRCH
+  false
+end
+
+def kill_server(pid = rails_pid)
+  say "Killing rails server with pid: #{pid}"
+  system("kill -9 #{pid}")
+  say HighLine.color("Rails server stopped", :good)
+end
+
+def run_rails
+  if rails_running?
+    say HighLine.color("Rails server already running", :bad)
+    return
+  end
+
+  system "sudo su #{USER} -c '/bin/bash --login -c \"rvm use #{RVM_RUBY} && cd #{DEPLOYMENT_DIR}/foreman && bundle exec rails s -d\"'"
+  say HighLine.color("Rails server started", :good)
+end
+
 if app_value(:provisioning_wizard) != 'none' && [0,2].include?(kafo.exit_code)
   require File.join(KafoConfigure.root_dir, 'hooks', 'lib', 'foreman.rb')
   require File.join(KafoConfigure.root_dir, 'hooks', 'lib', 'base_seeder.rb')
   require File.join(KafoConfigure.root_dir, 'hooks', 'lib', 'host_seeder.rb')
   require File.join(KafoConfigure.root_dir, 'hooks', 'lib', 'provisioning_seeder.rb')
 
-  puts "Starting configuration..."
+  say "Starting configuration..."
+  if app_value(:devel_env)
+    # TODO: devel_env doesn't run via apache, it uses a proxy pass and for some
+    # reason we're having trouble registering the sat host via puppet
+    system("echo ':restrict_registered_puppetmasters: false' >> #{DEPLOYMENT_DIR}/foreman/config/settings.yaml")
+
+    run_rails
+    say "Rails is running in PID: #{rails_pid}"
+  end
 
   host_seeder = HostSeeder.new(kafo)
   host_seeder.seed
@@ -23,17 +71,30 @@ if app_value(:provisioning_wizard) != 'none' && [0,2].include?(kafo.exit_code)
 
   logger.debug 'Installing puppet modules'
   `/usr/share/katello-installer/hooks/lib/install_modules.sh`
-  `foreman-rake puppet:import:puppet_classes[batch]`
+  if DEVEL_ENV
+    system "sudo su #{USER} -c '/bin/bash --login -c \"rvm use #{RVM_RUBY} && cd #{DEPLOYMENT_DIR}/foreman && bundle exec rake puppet:import:puppet_classes[batch]\"'"
+  else
+    `foreman-rake puppet:import:puppet_classes[batch]`
+  end
   # run import
   logger.debug 'Puppet modules installed'
-
 
   # add other provisioning data
   pro_seeder = ProvisioningSeeder.new(kafo)
   pro_seeder.seed
-  `foreman-rake db:migrate`
-  `foreman-rake db:seed`
+
+  if DEVEL_ENV
+    kill_server if rails_running?
+    system "sudo su #{USER} -c '/bin/bash --login -c \"rvm use #{RVM_RUBY} && cd #{DEPLOYMENT_DIR}/foreman && bundle exec rake db:migrate\"'"
+    system "sudo su #{USER} -c '/bin/bash --login -c \"rvm use #{RVM_RUBY} && cd #{DEPLOYMENT_DIR}/foreman && bundle exec rake db:seed\"'"
+  else
+    `foreman-rake db:migrate`
+    `foreman-rake db:seed`
+  end
+
+  say HighLine.color("Setup provisioning step complete.", :good)
 else
   say "Not running provisioning configuration since installation encountered errors, exit code was <%= color('#{kafo.exit_code}', :bad) %>"
   false
 end
+
