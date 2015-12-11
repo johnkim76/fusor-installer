@@ -97,17 +97,17 @@ class BaseWizard
   def get_ready
     choose do |menu|
       say "\n#{self.help}"
-      menu.header = "\nHow would you like to proceed?"
+      menu.header = "\nModify settings as needed, and then proceed with the installation"
       menu.prompt = ''
       menu.select_by = :index
-      adjustment  = 32 
+      adjustment  = 26
       count = 1
-      menu.choice(HighLine.color("Proceed with the values shown".rjust(adjustment+1), :run)) { false }
+      menu.choice(HighLine.color("Proceed with the values shown".rjust(adjustment+8), :run)) { false }
       self.class.order.each do |attr|
         count += 1
         name = self.class.attrs[attr.to_sym]
         value = kafo_param(attr).is_a?(Kafo::Params::Password) && @hide_password ? '*' * send(attr).size : send(attr)
-        name_label  = "Change #{name}"
+        name_label  = "#{name}"
         value_label = " | #{value}" 
         if (count < 10) && (menu.index.eql? :number)
           label = self.class.custom_labels[attr.to_sym] || name_label.rjust(adjustment+1) + value_label 

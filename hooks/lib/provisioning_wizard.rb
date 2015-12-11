@@ -40,7 +40,7 @@ class ProvisioningWizard < BaseWizard
   def initialize(kafo)
     super
     self.header = 'Networking setup:'
-    self.help = "The installer can configure the networking and firewall rules on this machine with the configuration shown below. Default values are populated from the this machine's existing networking configuration.\n\nIf you DO NOT want to configure networking please set 'Configure networking on this machine' to No before proceeding. Do this by selecting option 'Do not configure networking' from the list below."
+    self.help = "The installer can configure the networking and firewall rules on this machine with the configuration shown below. Default values are populated from this machine's existing networking configuration.\n\nIf you DO NOT want to configure networking, select the option 'Do not configure networking' from the list below."
     self.allow_cancellation = true
 
     @bmc = kafo.param('capsule', 'bmc').value
@@ -282,7 +282,7 @@ class ProvisioningWizard < BaseWizard
         @interface = interfaces.keys.first
       else
         @interface = choose do |menu|
-          menu.header = "\nPlease select NIC on which you want provisioning enabled"
+          menu.header = "\nSelect which NIC to use for provisioning"
           interfaces.keys.sort.each do |nic|
             menu.choice nic
           end
