@@ -118,7 +118,7 @@ class BaseWizard
         label = label
         menu.choice(label) { attr.to_sym }
       end
-      menu.choice(HighLine.color('Cancel Installation', :cancel)) { @kafo.class.exit(100) } if self.allow_cancellation
+      menu.choice(HighLine.color('Cancel installation', :cancel)) { @kafo.class.exit(100) } if self.allow_cancellation
     end
   rescue Interrupt
     @logger.debug "Got interrupt, exiting"
