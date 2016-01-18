@@ -74,7 +74,7 @@ class ProvisioningWizard < BaseWizard
 
   def dns
     @dns ||= begin
-      line = File.read('/etc/resolv.conf').split("\n").detect { |line| line =~ /nameserver\s+.*/ }
+      line = File.read('/etc/resolv.conf').split("\n").detect { |line| line =~ /nameserver\s+.*/ && line !~ /#{ip}/ }
       line.split(' ').last || ''
     rescue
       ''
