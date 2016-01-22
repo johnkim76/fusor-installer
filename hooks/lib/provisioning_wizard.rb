@@ -16,7 +16,7 @@ class ProvisioningWizard < BaseWizard
         :domain => 'Domain',
         :base_url => 'Foreman URL',
         :ntp_host => 'NTP sync host',
-        :timezone => 'Timezone',
+        :timezone => 'Time zone',
         :bmc => 'BMC feature enabled',
         :bmc_default_provider => 'BMC default provider',
         :configure_networking => 'Configure networking on this machine',
@@ -61,7 +61,7 @@ class ProvisioningWizard < BaseWizard
   end
 
   def get_timezone
-    @timezone = ask('Enter an IANA timezone identifier (e.g. America/New_York, Pacific/Auckland, UTC)')
+    @timezone = ask('Enter an IANA time zone identifier (e.g. America/New_York, Pacific/Auckland, UTC)')
   end
 
   def base_url
@@ -256,7 +256,7 @@ class ProvisioningWizard < BaseWizard
   end
 
   def validate_timezone
-    'Timezone is not a valid IANA timezone identifier' unless valid_timezone?(@timezone)
+    'Time zone is not a valid IANA time zone identifier' unless valid_timezone?(@timezone)
   end
 
   def validate_bmc
