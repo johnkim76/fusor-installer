@@ -1,17 +1,17 @@
---- 
+---
   :devel_env: true
   :log_dir: /var/log/fusor-devel-installer
   :log_name: fusor-devel-installer.log
   :log_level: :debug
   :no_prefix: true
-  :mapping: 
-    :"katello_devel::plugin::gutterball": 
+  :mapping:
+    :"katello_devel::plugin::gutterball":
       :dir_name: katello_devel
       :manifest_name: plugin/gutterball
-    :"katello_devel::plugin::foreman_gutterball": 
+    :"katello_devel::plugin::foreman_gutterball":
       :dir_name: katello_devel
       :manifest_name: plugin/foreman_gutterball
-    "foreman::plugin::fusor": 
+    "foreman::plugin::fusor":
       :manifest_name: plugin/fusor
       :dir_name: foreman
   :answer_file: "./config/fusor-devel-installer.answers.yaml"
@@ -23,14 +23,14 @@
   :hook_dirs: []
   :custom: {}
   :low_priority_modules: []
-  :order: 
+  :order:
     - certs
     - katello_devel
   :password: l7VtnWiPeKe412o2CVBM6yVbTkKGh6L_CKx4_zBkmUE
   :provisioning_wizard: interactive
   :dont_save_answers: false
   :ignore_undocumented: false
-  :interactive: 
+  :interactive:
   :noop: false
-  :verbose: 
+  :verbose:
   :verbose_log_level: info
