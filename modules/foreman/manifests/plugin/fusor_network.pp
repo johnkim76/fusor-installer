@@ -138,6 +138,13 @@ class foreman::plugin::fusor_network(
       action => 'accept',
       state  => 'NEW',
     } ->
+    # The Foreman server needs to accept NTP requests
+    firewall { '123 accept - ntp':
+      port   => '123',
+      proto  => 'udp',
+      action => 'accept',
+    } ->
+
     firewall { '443 accept - apache':
       port   => '443',
       proto  => 'tcp',
