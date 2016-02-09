@@ -212,6 +212,13 @@ class foreman::plugin::fusor_network(
       action => 'accept',
       state  => 'NEW',
     } ->
+    # This is for running the rails server on port 3000 in development mode
+    firewall { '3000 accept - rails server':
+      port   => '3000',
+      proto  => 'tcp',
+      action => 'accept',
+      state  => 'NEW',
+    } ->
     #Reject everything else
     firewall { '998 reject all':
       proto   => 'all',

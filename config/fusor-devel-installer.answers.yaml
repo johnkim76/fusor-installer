@@ -1,0 +1,18 @@
+---
+certs:
+  group: vagrant
+  deploy: true
+  generate: true
+katello_devel:
+  deployment_dir: /home/vagrant
+  user: vagrant
+  db_type: postgres
+  rvm: true
+capsule:
+  puppet: true
+  puppetca: true
+  pulp_master: true
+  register_in_foreman: true
+
+katello_devel::plugin::gutterball: true
+katello_devel::plugin::foreman_gutterball: true

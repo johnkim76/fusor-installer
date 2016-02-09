@@ -4,5 +4,7 @@ if app_value(:provisioning_wizard) != 'none'
              {:manifest_name => 'plugin/fusor',  :dir_name => 'foreman'})
 
   # make sure foreman-tasks is enabled
-  kafo.module('foreman_plugin_tasks').enable
+  unless app_value(:devel_env)
+    kafo.module('foreman_plugin_tasks').enable
+  end
 end

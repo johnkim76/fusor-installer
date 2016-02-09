@@ -5,11 +5,13 @@ class ProvisioningSeeder < BaseSeeder
 
   def initialize(kafo)
     super
-    @organization = kafo.param('foreman', 'initial_organization').value
-    @location = kafo.param('foreman', 'initial_location').value
+    param = kafo.param('foreman', 'initial_organization')
+    @organization = param.nil? ? 'Default Organization' : param.value
+
+    param = kafo.param('foreman', 'initial_location')
+    @location = param.nil? ? 'Default Location' : param.value
 
     @domain = kafo.param('capsule', 'dns_zone').value
-    @environment = kafo.param('foreman', 'environment').value
 
     @netmask = kafo.param('foreman_plugin_fusor', 'netmask').value
     @network = kafo.param('foreman_plugin_fusor', 'network').value
@@ -17,7 +19,7 @@ class ProvisioningSeeder < BaseSeeder
     @from = kafo.param('foreman_plugin_fusor', 'from').value
     @to = kafo.param('foreman_plugin_fusor', 'to').value
     @gateway = kafo.param('capsule', 'dhcp_gateway').value
-    
+
     @default_root_pass = kafo.param('foreman_plugin_fusor', 'root_password').instance_variable_get('@value')
     @default_ssh_public_key = kafo.param('foreman_plugin_fusor', 'ssh_public_key').value
     @ntp_host = kafo.param('foreman_plugin_fusor', 'ntp_host').value
@@ -205,8 +207,8 @@ class ProvisioningSeeder < BaseSeeder
                                                       'subnet_ids' => (subnet_ids + [objects['subnet']['id']]).uniq,
                                                       'config_template_ids' => (config_template_ids + objects['config_templates'].map{ |t| t['id'] }).uniq,
                                                       'hostgroup_ids' => (hostgroup_ids + objects['hostgroups'].map{ |h| h['id'] }).uniq,
-                                                      'environment_ids' => (environment_ids + [objects['environments'].map{ |e| e['id'] }]).flatten.uniq,
-                                                      'medium_ids' => (medium_ids + [objects['media'].map{ |m| m['id'] }]).uniq })
+                                                      'environment_ids' => (environment_ids + objects['environments'].map{ |e| e['id'] }).uniq,
+                                                      'medium_ids' => (medium_ids + objects['media'].map{ |m| m['id'] }).uniq })
   end
 
   def assign_location(location, objects)
@@ -222,8 +224,8 @@ class ProvisioningSeeder < BaseSeeder
                                               'subnet_ids' => (subnet_ids + [objects['subnet']['id']]).uniq,
                                               'config_template_ids' => (config_template_ids + objects['config_templates'].map{ |t| t['id'] }).uniq,
                                               'hostgroup_ids' => (hostgroup_ids + objects['hostgroups'].map{ |h| h['id'] }).uniq,
-                                              'environment_ids' => (environment_ids + [objects['environments'].map{ |e| e['id'] }]).flatten.uniq,
-                                              'medium_ids' => (medium_ids + [objects['media'].map{ |m| m['id'] }]).uniq })
+                                              'environment_ids' => (environment_ids + objects['environments'].map{ |e| e['id'] }).uniq,
+                                              'medium_ids' => (medium_ids + objects['media'].map{ |m| m['id'] }).uniq })
   end
 
   def setup_idle_timeout
