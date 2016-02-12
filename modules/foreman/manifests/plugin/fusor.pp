@@ -83,18 +83,11 @@ class foreman::plugin::fusor(
 #    require => Exec['NTP sync'],
 #  }
 
-  exec { 'NTP sync':
-    command => "/sbin/service ntpd stop; /usr/sbin/ntpdate $ntp_host",
-    notify  => Service['ntpd'],
-    require => [Package['ntp'], Package['ntpdate']],
-  }
-
-  package { ['ntp', 'ntpdate']: }
-
-  service { 'ntpd':
-    name   => 'ntpd',
-    ensure => 'running',
-    enable => true,
+  # Configure NTP server
+  class { '::ntp':
+     servers => [$ntp_host],
+     udlc => true,
+     restrict => ['default nomodify notrap', '127.0.0.1', '::1'],
   }
 
   if $timezone {
