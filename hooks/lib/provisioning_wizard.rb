@@ -356,8 +356,8 @@ class ProvisioningWizard < BaseWizard
   def current_system_timezone
     if File.exists?('/usr/bin/timedatectl')  # systems with systemd
       # timezone_line will be like 'Timezone: Europe/Prague (CEST, +0200)'
-      timezone_line = %x(/usr/bin/timedatectl status | grep "Timezone: ").strip
-      return timezone_line.match(/Timezone: ([^ ]*) /)[1]
+      timezone_line = %x(/usr/bin/timedatectl status | grep "Time zone: ").strip
+      return timezone_line.match(/Time zone: ([^ ]*) /)[1]
     else  # systems without systemd
       # timezone_line will be like 'ZONE="Europe/Prague"'
       timezone_line = %x(/bin/cat /etc/sysconfig/clock | /bin/grep '^ZONE=').strip

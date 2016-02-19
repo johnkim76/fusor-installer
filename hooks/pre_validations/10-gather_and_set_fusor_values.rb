@@ -40,6 +40,7 @@ if app_value(:provisioning_wizard) != 'none'
         kafo.class.exit(:invalid_values)
       end
     else
+      system("/bin/systemctl stop ntpd; /usr/sbin/ntpdate #{provisioning_wizard.ntp_host} >/dev")
       say HighLine.color('NTP sync host is ok', :good)
     end
   end
