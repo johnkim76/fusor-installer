@@ -24,6 +24,7 @@ Requires:   ntp
 Requires:   rubygem-kafo >= 0.6.4
 Requires:   git
 Requires:   ovirt-puppet
+Requires:   rubygem-ruby-ip
 
 %description
 This is a Foreman-Installer plugin that allows you to install and configure

@@ -1,4 +1,5 @@
 require 'resolv'
+require 'ip'
 
 class ProvisioningWizard < BaseWizard
   def self.attrs
@@ -7,7 +8,7 @@ class ProvisioningWizard < BaseWizard
         :ip => 'IP address',
         :fqdn => 'Hostname',
         :netmask => 'Network mask',
-        :network => 'Network address',
+        :network => 'DHCP Network address',
         :own_gateway => 'Host gateway',
         :from => 'DHCP range start',
         :to => 'DHCP range end',
@@ -25,7 +26,7 @@ class ProvisioningWizard < BaseWizard
   end
 
   def self.order
-    %w(interface ip fqdn netmask network own_gateway from to gateway dns domain base_url ntp_host timezone bmc bmc_default_provider configure_networking configure_firewall)
+    %w(interface fqdn ip netmask own_gateway network from to gateway dns domain base_url ntp_host timezone bmc bmc_default_provider configure_networking configure_firewall)
   end
 
   def self.custom_labels
@@ -82,11 +83,95 @@ class ProvisioningWizard < BaseWizard
   end
 
   def own_gateway
-    @own_gateway ||= `ip route | awk '/default/{print $3}'`.chomp
+    if @own_gateway != nil && !@own_gateway.empty?
+      @own_gateway
+    elsif !`ip route | awk '/default/{print $3}'`.chomp.empty?
+      @own_gateway = `ip route | awk '/default/{print $3}'`.chomp
+    elsif ip != nil && netmask != nil && valid_ip?(ip)
+      begin
+        mask = get_pfx(netmask)
+        addr = get_cidr(ip, mask)
+        if addr == addr.network(1)
+          @own_gateway = addr.broadcast(-1).to_addr
+        else
+          @own_gateway = addr.network(1).to_addr
+        end
+      rescue
+      end
+    end
+  end
+
+  def network
+    if @network != nil && !@network.empty?
+      @network
+    elsif ip != nil && netmask != nil
+      begin
+        mask = get_pfx(netmask)
+        addr = get_cidr(ip, mask)
+        @network = addr.network.to_addr
+      rescue
+      end
+    end
   end
 
   def gateway
-    @gateway ||= @ip
+    if @gateway != nil && !@gateway.empty?
+      @gateway
+    elsif own_gateway != nil
+      @gateway = own_gateway
+    end
+  end
+
+  def from
+    if @from != nil && !@from.empty?
+      @from
+    elsif ip != nil && netmask != nil
+      begin
+        mask = get_pfx(netmask)
+        addr = get_cidr(ip, mask)
+        gw = get_cidr(own_gateway, mask)
+        if gw < addr && (addr-gw) >= (addr.broadcast-addr) && (addr-gw) >= (gw-addr.network)
+          @from = (gw+1).to_addr
+        elsif gw < addr && (addr.broadcast-addr) >= (gw-addr.network)
+          @from = (addr+1).to_addr
+        elsif gw < addr
+          @from = addr.network(1).to_addr
+        elsif (gw-addr) >= (addr.broadcast-gw) && (gw-addr) >= (addr-addr.network)
+          @from = (addr+1).to_addr
+        elsif (addr.broadcast-gw) >= (addr-addr.network)
+          @from = (gw+1).to_addr
+        else
+          @from = addr.network(1).to_addr
+        end
+      rescue
+      end
+    end
+  end
+
+  def to
+    if @to != nil && !@to.empty?
+      @to
+    elsif ip != nil && netmask != nil
+      begin
+        mask = get_pfx(netmask)
+        addr = get_cidr(ip, mask)
+        gw = get_cidr(own_gateway, mask)
+        if gw < addr && (addr-gw) >= (addr.broadcast-addr) && (addr-gw) >= (gw-addr.network)
+          @to = (addr-1).to_addr
+        elsif gw < addr && (addr.broadcast-addr) >= (gw-addr.network)
+          @to = addr.broadcast(-1).to_addr
+        elsif gw < addr
+          @to = (gw-1).to_addr
+        elsif (gw-addr) >= (addr.broadcast-gw) && (gw-addr) >= (addr-addr.network)
+          @tp = (gw-1).to_addr
+        elsif (addr.broadcast-gw) >= (addr-addr.network)
+          @to = addr.broadcast(-1).to_addr
+        else
+          @to = (addr-1).to_addr
+        end
+      rescue
+      end
+    end
   end
 
   def netmask=(mask)
@@ -105,23 +190,23 @@ class ProvisioningWizard < BaseWizard
     @ip=ip
     config_fqdn
     @ip
-  end 
+  end
 
   def fqdn=(fqdn)
     @fqdn=fqdn
     @fqdn ||= Facter.value :fqdn
-    config_fqdn    
+    config_fqdn
     if Facter.fqdn != nil
       @base_url = "https://#{Facter.value :fqdn}"
       @domain = Facter.value :domain
-    end 
+    end
     Facter.value :fqdn
   end
 
   def config_fqdn
     Facter.flush
 
-    if @ip != nil && @fqdn != nil 
+    if @ip != nil && @fqdn != nil
       begin
         resolvedaddress = Resolv.getaddress(@fqdn)
       rescue
@@ -149,7 +234,7 @@ class ProvisioningWizard < BaseWizard
         rescue  => error
           say "<%= color('Warning: Could not write hostname to /etc/hostname: #{error}', :bad) %>"
         end
-        
+
         Facter.flush
         say "<%= color('Hostname configuration updated!', :good) %>"
       end
@@ -166,19 +251,25 @@ class ProvisioningWizard < BaseWizard
 
   def validate_ip
     if !(valid_ip?(@ip))
-      'IP address is invalid' 
+      'IP address is invalid'
     elsif (IPAddr.new(from)..IPAddr.new(to))===IPAddr.new(ip)
       'DHCP range is Invalid - DHCP range includes the provisioning host IP address'
     end
   end
 
   def validate_netmask
-    'Network mask is Invalid' unless valid_ip?(@netmask)
+    if netmask == nil
+      'You must specify a netmask'
+    elsif IPAddr.new(@netmask).to_i.to_s(2).count("1").to_i > 29
+      'You require a /29 (255.255.255.248) subnet at minimum'
+    elsif not valid_ip?(@netmask)
+      'Network mask is Invalid'
+    end
   end
 
   def validate_network
     if !(valid_ip?(@network))
-      'Network address - Invalid IP address' 
+      'Network address - Invalid IP address'
     elsif (IPAddr.new(from)..IPAddr.new(to))===IPAddr.new(network)
       'DHCP range is Invalid - DHCP range includes the Network address IP address'
     end
@@ -186,7 +277,7 @@ class ProvisioningWizard < BaseWizard
 
   def validate_own_gateway
     if !(valid_ip?(@own_gateway))
-      'Host Gateway - Invalid IP address' 
+      'Host Gateway - Invalid IP address'
     elsif (IPAddr.new(from)..IPAddr.new(to))===IPAddr.new(own_gateway)
       'DHCP range is Invalid - DHCP range includes the Host Gateway IP address'
     end
@@ -209,21 +300,21 @@ class ProvisioningWizard < BaseWizard
       'DHCP range end - Invalid IP address'
     elsif IPAddr.new(to).to_i < (IPAddr.new(from).to_i)+1
       'DHCP range end is Invalid - Minimum range of 2 needed from DHCP range start'
-    end  
+    end
   end
 
   def validate_gateway
     if !(valid_ip?(@gateway))
-      'DHCP Gateway - Invalid IP address' 
+      'DHCP Gateway - Invalid IP address'
     elsif (IPAddr.new(from)..IPAddr.new(to))===IPAddr.new(gateway)
-      'DHCP range is Invalid - DHCP range includes the DHCP Gateway IP address'  
+      'DHCP range is Invalid - DHCP range includes the DHCP Gateway IP address'
     end
   end
 
   def validate_dns
     if !(valid_ip?(@dns))
-      'DNS forwarder - Invalid IP address' 
-    elsif (IPAddr.new(from)..IPAddr.new(to))===IPAddr.new(dns)
+      'DNS forwarder - Invalid IP address'
+    elsif to != nil && from != nil && (IPAddr.new(from)..IPAddr.new(to))===IPAddr.new(dns)
       'DHCP range is Invalid - DHCP range includes the DNS forwarder IP address'
     end
   end
@@ -248,8 +339,8 @@ class ProvisioningWizard < BaseWizard
   end
 
   def validate_ntp_host
-    if @ntp_host.nil? || @ntp_host.empty? 
-      'NTP sync host must be specified' 
+    if @ntp_host.nil? || @ntp_host.empty?
+      'NTP sync host must be specified'
     elsif !(valid_ip?(@ntp_host))
       'NTP sync host - Invalid IP address'
     end
@@ -297,8 +388,6 @@ class ProvisioningWizard < BaseWizard
     @network = interfaces[@interface][:network]
     @netmask = interfaces[@interface][:netmask]
     @cidr = interfaces[@interface][:cidr]
-    @from = interfaces[@interface][:from]
-    @to = interfaces[@interface][:to]
   end
 
   def interfaces
@@ -310,13 +399,19 @@ class ProvisioningWizard < BaseWizard
       cidr, from, to = nil, nil, nil
       if ip && network && netmask
         cidr = "#{network}/#{IPAddr.new(netmask).to_i.to_s(2).count('1')}"
-        from = IPAddr.new(ip).succ.to_s
-        to = IPAddr.new(cidr).to_range.entries[-2].to_s
       end
 
       ifaces[fix_interface_name(i)] = {:ip => ip, :netmask => netmask, :network => network, :cidr => cidr, :from => from, :to => to, :gateway => gateway}
       ifaces
     end
+  end
+
+  def get_cidr(ip, mask)
+    IP.new("#{ip}/#{mask}")
+  end
+
+  def get_pfx(netmask)
+    IPAddr.new(netmask).to_i.to_s(2).count("1")
   end
 
   # facter can't distinguish between alias and vlan interface so we have to check and fix the eth0_0 name accordingly
@@ -337,9 +432,9 @@ class ProvisioningWizard < BaseWizard
   end
 
   def valid_ip?(ip)
-    (!!(ip =~ Resolv::IPv4::Regex)) || 
+    (!!(ip =~ Resolv::IPv4::Regex)) ||
     (!!(ip =~ Resolv::IPv6::Regex)) ||
-    (ip =~ /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/) 
+    (ip =~ /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/)
   end
 
   # NOTE(jistr): currently we only have tzinfo for ruby193 scl and
