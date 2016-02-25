@@ -66,7 +66,11 @@ class ProvisioningWizard < BaseWizard
   end
 
   def base_url
-    @base_url ||= "https://#{Facter.value :fqdn}"
+    if @base_url != nil and !@base_url.empty?
+      @base_url
+    elsif Facter.fqdn != nil
+      "https://#{Facter.fqdn}"
+    end
   end
 
   def domain
