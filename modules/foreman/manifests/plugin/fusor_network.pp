@@ -58,17 +58,6 @@ class foreman::plugin::fusor_network(
     # Therefore, to get consistent results, we must methodically stop firewalld first.
     # Then stop iptables, save the blank policy, then create the new rules.
     class { 'firewall': }
-    package {'firewalld': 
-      ensure => installed,
-    } ->
-    package {'iptables-services':
-      ensure => installed,
-    } ->
-    service {'firewalld':
-      enable  => 'false',
-      ensure  => 'stopped',
-      require => [ Package['firewalld'], Package['iptables-services'], ],
-    } ->
     exec {'save-blank-policy':
       command => "service iptables stop; iptables-save > /etc/sysconfig/iptables",
       path    => "/usr/bin/:/usr/sbin/",

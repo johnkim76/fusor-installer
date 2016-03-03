@@ -46,22 +46,30 @@ if app_value(:provisioning_wizard) != 'none'
   end
 
   param('capsule', 'parent_fqdn').value = provisioning_wizard.fqdn
-  param('capsule', 'tftp_servername').value = provisioning_wizard.ip
-  param('capsule', 'dhcp_interface').value = provisioning_wizard.interface
-  param('capsule', 'dhcp_gateway').value = provisioning_wizard.gateway
-  param('capsule', 'dhcp_range').value = "#{provisioning_wizard.from} #{provisioning_wizard.to}"
-  param('capsule', 'dhcp_nameservers').value = provisioning_wizard.ip
-  param('capsule', 'dns_interface').value = provisioning_wizard.interface
-  param('capsule', 'dns_zone').value = provisioning_wizard.domain
-  param('capsule', 'dns_reverse').value = provisioning_wizard.ip.split('.')[0..2].reverse.join('.') + '.in-addr.arpa'
-  param('capsule', 'dns_tsig_principal').value = "foremanproxy/#{provisioning_wizard.fqdn}@#{provisioning_wizard.domain.upcase}"
-  param('capsule', 'realm_principal').value = "realm-proxy@#{provisioning_wizard.domain.upcase}"
-  param('capsule', 'dns_forwarders').value = provisioning_wizard.dns
   param('capsule', 'qpid_router_broker_addr').value = provisioning_wizard.fqdn
-  param('capsule', 'bmc').value = provisioning_wizard.bmc
-  param('capsule', 'bmc_default_provider').value = provisioning_wizard.bmc_default_provider
   param('certs', 'node_fqdn').value = provisioning_wizard.fqdn
   param('certs', 'ca_common_name').value = provisioning_wizard.fqdn
+  param('foreman_proxy', 'tftp_servername').value = provisioning_wizard.ip
+  param('foreman_proxy', 'dhcp_interface').value = provisioning_wizard.interface
+  param('foreman_proxy', 'dhcp_gateway').value = provisioning_wizard.gateway
+  param('foreman_proxy', 'dhcp_range').value = "#{provisioning_wizard.from} #{provisioning_wizard.to}"
+  param('foreman_proxy', 'dhcp_nameservers').value = provisioning_wizard.ip
+  param('foreman_proxy', 'dns_interface').value = provisioning_wizard.interface
+  param('foreman_proxy', 'dns_zone').value = provisioning_wizard.domain
+  param('foreman_proxy', 'dns_reverse').value = provisioning_wizard.ip.split('.')[0..2].reverse.join('.') + '.in-addr.arpa'
+  param('foreman_proxy', 'dns_tsig_principal').value = "foremanproxy/#{provisioning_wizard.fqdn}@#{provisioning_wizard.domain.upcase}"
+  param('foreman_proxy', 'foreman_base_url').value = provisioning_wizard.base_url
+  param('foreman_proxy', 'realm_principal').value = "realm-proxy@#{provisioning_wizard.domain.upcase}"
+  param('foreman_proxy', 'dns_forwarders').value = provisioning_wizard.dns
+  param('foreman_proxy', 'bmc').value = provisioning_wizard.bmc
+  param('foreman_proxy', 'bmc_default_provider').value = provisioning_wizard.bmc_default_provider
+  param('foreman_proxy', 'puppet_ssl_cert').value = "/var/lib/puppet/ssl/certs/#{provisioning_wizard.fqdn}.pem"
+  param('foreman_proxy', 'puppet_ssl_key').value = "/var/lib/puppet/ssl/private_keys/#{provisioning_wizard.fqdn}.pem"
+  param('foreman_proxy', 'registered_name').value = provisioning_wizard.fqdn
+  param('foreman_proxy', 'puppet_url').value = "https://#{provisioning_wizard.fqdn}:8140"
+  param('foreman_proxy', 'template_url').value = "http://#{provisioning_wizard.fqdn}:8000"
+  param('foreman_proxy', 'trusted_hosts').value = [provisioning_wizard.fqdn]
+  param('foreman_proxy_plugin_pulp', 'pulp_url').value = "https://#{provisioning_wizard.fqdn}/pulp"
   param('foreman_plugin_fusor', 'configure_networking').value = provisioning_wizard.configure_networking
   param('foreman_plugin_fusor', 'configure_firewall').value = provisioning_wizard.configure_firewall
   param('foreman_plugin_fusor', 'interface').value = provisioning_wizard.interface
@@ -79,10 +87,10 @@ if app_value(:provisioning_wizard) != 'none'
   param('foreman_plugin_fusor', 'timezone').value = provisioning_wizard.timezone
 
   # some enforced values for foreman-installer
-  param('capsule', 'tftp').value = true
-  param('capsule', 'dhcp').value = true
-  param('capsule', 'dns').value = true
-#  param('capsule', 'repo').value = 'nightly'
+  param('foreman_proxy', 'tftp').value = true
+  param('foreman_proxy', 'dhcp').value = true
+  param('foreman_proxy', 'dns').value = true
+#  param('foreman_proxy', 'repo').value = 'nightly'
 
   unless app_value(:devel_env)
     param('foreman', 'servername').value = provisioning_wizard.fqdn

@@ -52,7 +52,6 @@ class BaseSeeder
     additional << foreman.operatingsystems.show_or_ensure({'id' => 'CentOS 6.6'},
                                                           {'name' => 'CentOS', 'major' => '6',
                                                            'minor' => '6', 'family' => 'Redhat'})
-
     additional
   end
 

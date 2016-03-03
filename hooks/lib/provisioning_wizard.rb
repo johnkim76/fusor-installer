@@ -44,8 +44,8 @@ class ProvisioningWizard < BaseWizard
     self.help = "The installer can configure the networking and firewall rules on this machine with the configuration shown below. Default values are populated from this machine's existing networking configuration.\n\nIf you DO NOT want to configure networking, select the option 'Do not configure networking' from the list below."
     self.allow_cancellation = true
 
-    @bmc = kafo.param('capsule', 'bmc').value
-    @bmc_default_provider = kafo.param('capsule', 'bmc_default_provider').value
+    @bmc = kafo.param('foreman_proxy', 'bmc').value
+    @bmc_default_provider = kafo.param('foreman_proxy', 'bmc_default_provider').value
   end
 
   def start
@@ -68,8 +68,8 @@ class ProvisioningWizard < BaseWizard
   def base_url
     if @base_url != nil and !@base_url.empty?
       @base_url
-    elsif Facter.fqdn != nil
-      @base_url = "https://#{Facter.fqdn}"
+    elsif Facter.value('fqdn') != nil && Facter.value('fqdn') != 'localhost'
+      @base_url = "https://#{Facter.value('fqdn')}"
     end
   end
 
@@ -212,8 +212,8 @@ class ProvisioningWizard < BaseWizard
     @fqdn=fqdn
     @fqdn ||= Facter.value :fqdn
     config_fqdn
-    if Facter.fqdn != nil
-      @base_url = "https://#{Facter.value :fqdn}"
+    if Facter.value('fqdn') != nil && Facter.value('fqdn') != 'localhost'
+      @base_url = "https://#{Facter.value('fqdn')}"
       @domain = Facter.value :domain
     end
     Facter.value :fqdn
@@ -240,7 +240,7 @@ class ProvisioningWizard < BaseWizard
           hosts.gsub!(/^#{Regexp.escape(@ip)}\s.*?$\n/, '')
           hosts.gsub!(/^.*?\s#{Regexp.escape(@fqdn)}\s.*?$\n/, '')
           hosts.chop!
-          hosts += "\n#{@ip} #{@fqdn} #{Facter.hostname}\n"
+          hosts += "\n#{@ip} #{@fqdn} #{Facter.value('hostname')}\n"
           File.open('/etc/hosts', "w") { |file| file.write(hosts) }
         rescue => error
           say "<%= color('Warning: Could not write host entry to /etc/hosts: #{error}', :bad) %>"
