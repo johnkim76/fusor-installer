@@ -85,7 +85,7 @@ if [0,2].include? @result.exit_code
   exit_code = 0
 elsif @result.exit_code == 100
   # user cancelled installation
-  exit_code = 0
+  exit_code = @result.exit_code
 else
   say "  <%= color('Something went wrong!', :bad) %> Check the log for ERROR-level output"
   exit_code = @result.exit_code
