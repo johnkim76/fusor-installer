@@ -43,21 +43,17 @@ end
 if app_value(:provisioning_wizard) != 'none' && [0,2].include?(kafo.exit_code)
   require File.join(KafoConfigure.root_dir, 'hooks', 'lib', 'foreman.rb')
   require File.join(KafoConfigure.root_dir, 'hooks', 'lib', 'base_seeder.rb')
-  require File.join(KafoConfigure.root_dir, 'hooks', 'lib', 'host_seeder.rb')
   require File.join(KafoConfigure.root_dir, 'hooks', 'lib', 'provisioning_seeder.rb')
 
   say "Starting configuration..."
   if app_value(:devel_env)
     # TODO: devel_env doesn't run via apache, it uses a proxy pass and for some
     # reason we're having trouble registering the sat host via puppet
-    system("echo ':restrict_registered_puppetmasters: false' >> #{DEPLOYMENT_DIR}/foreman/config/settings.yaml")
+    system("echo ':restrict_registered_smart_proxies: false' >> #{DEPLOYMENT_DIR}/foreman/config/settings.yaml")
 
     run_rails
     say "Rails is running in PID: #{rails_pid}"
   end
-
-  host_seeder = HostSeeder.new(kafo)
-  host_seeder.seed
 
   # we must enforce at least one puppet run
   logger.debug 'Running puppet agent to seed foreman data'
@@ -70,7 +66,7 @@ if app_value(:provisioning_wizard) != 'none' && [0,2].include?(kafo.exit_code)
   logger.debug 'Puppet agent run finished'
 
   logger.debug 'Installing puppet modules'
-  `/usr/share/katello-installer/hooks/lib/install_modules.sh`
+  `/usr/share/foreman-installer/hooks/lib/install_modules.sh`
   if DEVEL_ENV
     system "sudo su #{USER} -c '/bin/bash --login -c \"rvm use #{RVM_RUBY} && cd #{DEPLOYMENT_DIR}/foreman && bundle exec rake puppet:import:puppet_classes[batch]\"'"
   else
