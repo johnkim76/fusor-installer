@@ -87,6 +87,14 @@ class ProvisioningSeeder < BaseSeeder
     pxe_linux = kinds.detect { |k| k['name'] == 'PXELinux' }
     default_config_templates = []
 
+    rhev_self_hosted_ptable = @foreman.ptables.show_or_ensure(
+                                            {'id' => 'ptable_rhev_self_hosted'},
+                                            {
+                                              'name' => 'rhev_self_hosted',
+                                              'os_family' => 'Redhat',
+                                              'layout' => ptable_rhev_self_hosted_snippet
+                                            })
+
     name = 'PXELinux global default'
     pxe_template = @foreman.config_templates.show_or_ensure({'id' => name},
                                                             {'template' => template})
@@ -230,4 +238,17 @@ IPAPPEND 2
 EOS
   end
 
+  def ptable_rhev_self_hosted_snippet
+    <<'EOS'
+zerombr
+clearpart --all --initlabel
+part /boot --fstype ext3 --size=200 --asprimary
+part swap --recommended
+part pv.01 --size=1 --grow
+
+volgroup VolGroup01 pv.01
+logvol / --fstype ext4 --name=root --vgname=VolGroup01 --size=1 --grow
+
+EOS
+  end
 end
