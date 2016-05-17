@@ -9,8 +9,8 @@
 
 Name:       fusor-installer
 Epoch:      1
-Version:    0.0.14
-Release:    1%{?dotalphatag}%{?dist}
+Version:    1.0.0
+Release:    0%{?dotalphatag}%{?dist}
 Summary:    Foreman-installer plugin that allows you to install Fusor
 Group:      Applications/System
 License:    GPLv3+ and ASL 2.0
