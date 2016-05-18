@@ -214,7 +214,7 @@ class ProvisioningSeeder < BaseSeeder
   end
 
   def upload_puppet_modules(repository)
-    path = "/usr/share/ovirt-puppet/pkg/jcannon-ovirt-0.0.4.tar.gz"
+    path = "/usr/share/ovirt-puppet/pkg/jcannon-ovirt-1.0.0.tar.gz"
 
     response = @foreman.api_resource(:repositories).action(:upload_content).
       call({ :id => repository['id'], :content => [::File.new(path, 'rb')]},
